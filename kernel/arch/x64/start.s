@@ -19,23 +19,43 @@ mb_start:
 	dd 8
 mb_end:
 
+%macro print 1
+	mov ecx, %%loop_start - %%strdata
+	mov eax, 0x0700
+	mov ebx, [text_y]
+	shl ebx, 1
+	jmp %%loop_start
+%%strdata: db %1
+%%loop_start:
+	mov al, [%%strdata + ecx - 1]
+	mov [0xb8000 + ecx * 2 + ebx - 2], ax
+	loop %%loop_start
+	add dword [text_y], 80
+%endmacro
+
 section .bootstrap
 bits 32
 start:
 	; Clear interrupts
 	cli
 
-	; Clear screen
-	xor ecx, ecx
-clrscr:
-	mov word [0xb8000 + ecx], 0x0000
-	add ecx, 2
-	cmp ecx, 2 * (80 * 25)
-	jnz clrscr
+	; Save multiboot info
+	mov [mb_info], ebx
 
-	mov dword [0xb8000], 0x073a0728
+	; Clear screen
+	mov ecx, 2 * 80 * 25
+	xor eax, eax
+	mov edi, 0xb8000
+	rep stosw
+
+	print "Hello, World!"
 
 hltspin:
 	hlt
 	jmp hltspin
 
+section .data
+text_y:
+	dd 0
+mb_info:
+	dq 0
