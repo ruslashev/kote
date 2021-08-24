@@ -3,4 +3,5 @@ toolchain
 
 *.o
 *.bin
+*.iso
 
