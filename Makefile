@@ -16,6 +16,9 @@ LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
          -Map $(BUILDDIR)/map.txt \
          -z max-page-size=0x1000
 
+OBJD = $(TOOLCHAIN)objdump
+OFLAGS = -D -S -M intel --visualize-jumps --no-show-raw-insn -w
+
 ISO = grub-mkrescue
 IFLAGS = -follow-links -no-pad
 GRUB_CFG = grub.cfg
@@ -28,7 +31,11 @@ OBJS = $(ASRC:%.s=$(OBJDIR)/%.o)
 KERNBIN = kernel.bin
 KERNISO = ree.iso
 
-all: $(KERNISO)
+DISAS = $(KERNBIN:%.bin=%.txt)
+
+all: debug qemu
+
+debug: $(DISAS)
 
 qemu: $(KERNISO)
 	$(QEMU) $(QFLAGS) -cdrom $<
@@ -39,10 +46,13 @@ $(KERNBIN): $(OBJS)
 $(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s $(OBJDIR)
 	$(AS) $(AFLAGS) $< -o $@
 
-$(KERNISO): $(KERNBIN) $(ISODIR)
+$(KERNISO): $(ISODIR) $(KERNBIN)
 	$(LN) $(realpath $(KERNBIN)) $(ISODIR)
 	$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
-	$(ISO) $(ISODIR) $(IFLAGS) -o $@ 2> /dev/null
+	$(ISO) $(IFLAGS) $^ -o $@ 2> /dev/null
+
+%.txt: %.bin
+	$(OBJD) $(OFLAGS) $< > $@
 
 $(OBJDIR):
 	@mkdir -p $@
@@ -55,5 +65,5 @@ clean:
 
 -include toolchain.mk
 
-.PHONY: all qemu clean
+.PHONY: all debug qemu clean
 .DELETE_ON_ERROR:

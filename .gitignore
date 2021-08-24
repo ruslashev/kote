@@ -4,4 +4,5 @@ toolchain
 *.o
 *.bin
 *.iso
+*.txt
 
