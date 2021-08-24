@@ -28,8 +28,8 @@ QFLAGS = -m 1G -serial stdio
 
 ASRC = start.s
 OBJS = $(ASRC:%.s=$(OBJDIR)/%.o)
-KERNBIN = kernel.bin
-KERNISO = ree.iso
+KERNBIN = $(BUILDDIR)/kernel.bin
+KERNISO = $(BUILDDIR)/ree.iso
 
 DISAS = $(KERNBIN:%.bin=%.txt)
 
@@ -41,7 +41,7 @@ qemu: $(KERNISO)
 	$(QEMU) $(QFLAGS) -cdrom $<
 
 $(KERNBIN): $(OBJS)
-	$(LD) $(LFLAGS) $< -o $@
+	$(LD) $(LFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s $(OBJDIR)
 	$(AS) $(AFLAGS) $< -o $@
@@ -49,7 +49,7 @@ $(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s $(OBJDIR)
 $(KERNISO): $(ISODIR) $(KERNBIN)
 	$(LN) $(realpath $(KERNBIN)) $(ISODIR)
 	$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
-	$(ISO) $(IFLAGS) $^ -o $@ 2> /dev/null
+	$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
 
 %.txt: %.bin
 	$(OBJD) $(OFLAGS) $< > $@
