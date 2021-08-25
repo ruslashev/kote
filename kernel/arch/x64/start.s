@@ -31,7 +31,7 @@ mb_end:
 %endmacro
 
 bits 32
-section .bootstrap
+section .inittext
 start:
 	; Clear interrupts
 	cli
@@ -54,11 +54,15 @@ start:
 	call setup_long_mode
 	call enable_paging
 
-	print "Hello, World!"
+	; Load GDT
+	lgdt [gdt.ptr]
 
-hltspin:
+	; Enter long mode
+	jmp 8:start64
+
+initspin:
 	hlt
-	jmp hltspin
+	jmp initspin
 
 clear_screen:
 	mov ecx, 2 * 80 * 25
@@ -73,7 +77,7 @@ check_multiboot:
 	ret
 .fail:
 	print "Not loaded by a multiboot-compliant bootloader"
-	jmp hltspin
+	jmp initspin
 
 check_cpuid:
 	pushfd
@@ -91,7 +95,7 @@ check_cpuid:
 	ret
 .fail:
 	print "CPUID instruction unavailable"
-	jmp hltspin
+	jmp initspin
 
 check_long_mode:
 	mov eax, 0x80000000
@@ -105,12 +109,12 @@ check_long_mode:
 	ret
 .fail:
 	print "This CPU is not 64-bit capable"
-	jmp hltspin
+	jmp initspin
 
 map_pages:
-%define HUGE     0b10000000
-%define WRITABLE 0b00000010
-%define PRESENT  0b00000001
+%define HUGE     (1 << 7)
+%define WRITABLE (1 << 1)
+%define PRESENT  (1 << 0)
 	; PML4[0] -> PDPT
 	mov eax, pdpt
 	or eax, WRITABLE | PRESENT
@@ -153,6 +157,14 @@ enable_paging:
 	mov cr0, eax
 	ret
 
+bits 64
+start64:
+	print "Hello, World!"
+
+hltspin:
+	hlt
+	jmp hltspin
+
 section .bss
 pml4:
 	resb 4096
@@ -167,3 +179,16 @@ init_stack:
 section .data
 mb_info:
 	dq 0
+gdt:
+%define RW (1 << 41) ; Readable (for code) / Writable (for data)
+%define Ex (1 << 43) ; Executable
+%define S  (1 << 44) ; 0 (system) / 1 (user) code and data
+%define Pr (1 << 47) ; Present
+%define L  (1 << 53) ; Is 64-bit code
+	dq 0                    ; null
+	dq RW | Ex | S | Pr | L ; code
+	dq RW      | S | Pr     ; data
+.ptr:
+	dw $ - gdt - 1 ; size
+	dq gdt         ; offset (address)
+

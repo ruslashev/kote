@@ -9,14 +9,14 @@ SECTIONS {
 	. += SIZEOF_HEADERS;
 
 	.boot : {
-		* (.multiboot .bootstrap)
+		* (.multiboot .inittext)
 	}
 
-	.data ALIGN(0x1000) : {
+	.data ALIGN (0x1000) : {
 		* (.data)
 	}
 
-	.bss ALIGN(0x1000) : {
+	.bss ALIGN (0x1000) : {
 		* (.bss)
 	}
 }
