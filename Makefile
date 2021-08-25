@@ -33,26 +33,33 @@ KERNISO = $(BUILDDIR)/ree.iso
 
 DISAS = $(KERNBIN:%.bin=%.txt)
 
+ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
+
 all: debug qemu
 
 debug: $(DISAS)
 
 qemu: $(KERNISO)
-	$(QEMU) $(QFLAGS) -cdrom $<
+	@$(call ECHO, qemu, $(<F))
+	@$(QEMU) $(QFLAGS) -cdrom $<
 
 $(KERNBIN): $(OBJS)
-	$(LD) $(LFLAGS) $^ -o $@
+	@$(call ECHO, ld)
+	@$(LD) $(LFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s $(OBJDIR)
-	$(AS) $(AFLAGS) $< -o $@
+	@$(call ECHO, as)
+	@$(AS) $(AFLAGS) $< -o $@
 
 $(KERNISO): $(ISODIR) $(KERNBIN)
-	$(LN) $(realpath $(KERNBIN)) $(ISODIR)
-	$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
-	$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
+	@$(call ECHO, iso)
+	@$(LN) $(realpath $(KERNBIN)) $(ISODIR)
+	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
+	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
 
 %.txt: %.bin
-	$(OBJD) $(OFLAGS) $< > $@
+	@$(call ECHO, objd)
+	@$(OBJD) $(OFLAGS) $< > $@
 
 $(OBJDIR):
 	@mkdir -p $@
@@ -61,7 +68,8 @@ $(ISODIR):
 	@mkdir -p $@/boot/grub
 
 clean:
-	rm -rf $(BUILDDIR) $(KERNBIN) $(KERNISO)
+	@$(call ECHO)
+	@rm -rf $(BUILDDIR) $(KERNBIN) $(KERNISO)
 
 -include toolchain.mk
 
