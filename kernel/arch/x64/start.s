@@ -3,7 +3,7 @@ global start
 section .multiboot
 align 8
 mb_start:
-	%define MB_MAGIC  0xE85250D6
+	%define MB_MAGIC  0xe85250d6
 	%define MB_ARCH   0
 	%define MB_LENGTH (mb_end - mb_start)
 	%define MB_CHKSUM -(MB_MAGIC + MB_ARCH + MB_LENGTH)
@@ -49,8 +49,10 @@ start:
 	call check_multiboot
 
 	call check_cpuid
-
 	call check_long_mode
+	call map_pages
+	call setup_long_mode
+	call enable_paging
 
 	print "Hello, World!"
 
@@ -105,7 +107,59 @@ check_long_mode:
 	print "This CPU is not 64-bit capable"
 	jmp hltspin
 
+map_pages:
+%define HUGE     0b10000000
+%define WRITABLE 0b00000010
+%define PRESENT  0b00000001
+	; PML4[0] -> PDPT
+	mov eax, pdpt
+	or eax, WRITABLE | PRESENT
+	mov [pml4], eax
+
+	; PDPT[0] -> PD
+	mov eax, pd
+	or eax, WRITABLE | PRESENT
+	mov [pdpt], eax
+
+	; PD -> 0x00000000 - 0x00400000
+	mov dword [pd + 0], 0x000000 | HUGE | WRITABLE | PRESENT
+	mov dword [pd + 8], 0x200000 | HUGE | WRITABLE | PRESENT
+	ret
+
+setup_long_mode:
+	; Enable Physical Address Extension
+	mov eax, cr4
+	bts eax, 5
+	mov cr4, eax
+
+	; Enable long mode in EFER
+	mov ecx, 0xc0000080
+	rdmsr
+	bts eax, 0  ; System call extensions
+	bts eax, 8  ; Long mode enable
+	bts eax, 11 ; No-execute enable
+	wrmsr
+	ret
+
+enable_paging:
+	; Load PML4
+	mov eax, pml4
+	mov cr3, eax
+
+	; Enable paging
+	mov eax, cr0
+	bts eax, 16 ; Write protect
+	bts eax, 31 ; Paging
+	mov cr0, eax
+	ret
+
 section .bss
+pml4:
+	resb 4096
+pdpt:
+	resb 4096
+pd:
+	resb 4096
 init_stack_bottom:
 	resb 4096 * 2
 init_stack:
