@@ -34,7 +34,7 @@ GRUB_CFG = grub.cfg
 QEMU = qemu-system-x86_64
 QFLAGS = -m 1G -serial stdio
 
-RKERNLIB = $(RBUILDDIR)/libkernel.a
+RKERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 KERNLIB = $(BUILDDIR)/libkernel.a
 
 ASRC = start.s
@@ -84,23 +84,18 @@ $(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
-$(OBJDIR):
+$(OBJDIR) $(RUSTDIR) $(DISASDIR):
 	@mkdir -p $@
 
 $(ISODIR):
 	@mkdir -p $@/boot/grub
-
-$(RUSTDIR):
-	@mkdir -p $@
-
-$(DISASDIR):
-	@mkdir -p $@
 
 clean:
 	@$(call ECHO)
 	@rm -rf $(BUILDDIR) $(KERNBIN) $(KERNISO)
 
 -include toolchain.mk
+-include $(RBUILDDIR)/libkernel.d
 
 .PHONY: all debug qemu clean
 .DELETE_ON_ERROR:
