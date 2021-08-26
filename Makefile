@@ -7,6 +7,7 @@ OBJDIR = $(BUILDDIR)/obj
 ISODIR = $(BUILDDIR)/iso
 RUSTDIR = $(BUILDDIR)/rust
 RBUILDDIR = $(RUSTDIR)/target/debug
+DISASDIR = $(BUILDDIR)/disas
 
 LN = ln -sf
 
@@ -41,17 +42,18 @@ OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso
 
-DISAS = $(KERNBIN:%.bin=%.txt)
+DISASBIN = $(notdir $(OBJS) $(KERNBIN))
+DISAS = $(DISASBIN:%=$(DISASDIR)/%.txt)
 
 ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
 
-all: debug qemu
-
-debug: $(DISAS)
+all: qemu
 
 qemu: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
 	@$(QEMU) $(QFLAGS) -cdrom $<
+
+debug: $(DISAS)
 
 $(KERNBIN): $(OBJS)
 	@$(call ECHO, ld)
@@ -74,7 +76,11 @@ $(RKERNLIB): $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS)
 
-%.txt: %.bin
+$(DISASDIR)/%.txt: $(OBJDIR)/% $(DISASDIR)
+	@$(call ECHO, objd)
+	@$(OBJD) $(OFLAGS) $< > $@
+
+$(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
@@ -85,6 +91,9 @@ $(ISODIR):
 	@mkdir -p $@/boot/grub
 
 $(RUSTDIR):
+	@mkdir -p $@
+
+$(DISASDIR):
 	@mkdir -p $@
 
 clean:
