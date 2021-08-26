@@ -1,5 +1,18 @@
 global start
 
+%define KERNEL_STACK_SZ 4096 * 2
+
+%macro print 1
+	mov ecx, %%loop_start - %%strdata
+	mov eax, 0x0700
+	jmp %%loop_start
+%%strdata: db %1
+%%loop_start:
+	mov al, [%%strdata + ecx - 1]
+	mov [0xb8000 + ecx * 2 - 2], ax
+	loop %%loop_start
+%endmacro
+
 section .multiboot
 align 8
 mb_start:
@@ -18,17 +31,6 @@ mb_start:
 	dw 0
 	dd 8
 mb_end:
-
-%macro print 1
-	mov ecx, %%loop_start - %%strdata
-	mov eax, 0x0700
-	jmp %%loop_start
-%%strdata: db %1
-%%loop_start:
-	mov al, [%%strdata + ecx - 1]
-	mov [0xb8000 + ecx * 2 - 2], ax
-	loop %%loop_start
-%endmacro
 
 bits 32
 section .inittext
@@ -165,17 +167,6 @@ hltspin:
 	hlt
 	jmp hltspin
 
-section .bss
-pml4:
-	resb 4096
-pdpt:
-	resb 4096
-pd:
-	resb 4096
-init_stack_bottom:
-	resb 4096 * 2
-init_stack:
-
 section .data
 mb_info:
 	dq 0
@@ -191,4 +182,15 @@ gdt:
 .ptr:
 	dw $ - gdt - 1 ; size
 	dq gdt         ; offset (address)
+
+section .bss
+pml4:
+	resb 4096
+pdpt:
+	resb 4096
+pd:
+	resb 4096
+init_stack_bottom:
+	resb KERNEL_STACK_SZ
+init_stack:
 
