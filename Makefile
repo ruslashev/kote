@@ -34,8 +34,10 @@ QEMU = qemu-system-x86_64
 QFLAGS = -m 1G -serial stdio
 
 RKERNLIB = $(RBUILDDIR)/libkernel.a
+KERNLIB = $(BUILDDIR)/libkernel.a
+
 ASRC = start.s
-OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(RKERNLIB)
+OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso
 
@@ -64,6 +66,9 @@ $(KERNISO): $(ISODIR) $(KERNBIN)
 	@$(LN) $(realpath $(KERNBIN)) $(ISODIR)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
 	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
+
+$(KERNLIB): $(RKERNLIB)
+	@$(LN) $(realpath $<) $@
 
 $(RKERNLIB): $(RUSTDIR)
 	@$(call ECHO, cargo)
