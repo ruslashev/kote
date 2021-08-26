@@ -1,5 +1,7 @@
 global start
 
+extern kmain
+
 %define KERNEL_BASE 0xffffffff80000000
 %define KERNEL_STACK_SZ 4096 * 2
 
@@ -117,32 +119,31 @@ check_long_mode:
 	jmp initspin
 
 map_pages:
-%define HUGE     (1 << 7)
-%define WRITABLE (1 << 1)
-%define PRESENT  (1 << 0)
+%define Huge (1 << 7)
+%define WrPr (1 << 1) | (1 << 0) ; Writable and present
 	; pml4[0] -> pdpt_low (for startup)
 	mov eax, RELOC(pdpt_low)
-	or eax, WRITABLE | PRESENT
+	or eax, WrPr
 	mov [RELOC(pml4)], eax
 
 	; pml4[511] -> pdpt
 	mov eax, RELOC(pdpt)
-	or eax, WRITABLE | PRESENT
+	or eax, WrPr
 	mov [RELOC(pml4) + 511 * 8], eax
 
 	; pdpt_low[0] -> pd
 	mov eax, RELOC(pd)
-	or eax, WRITABLE | PRESENT
+	or eax, WrPr
 	mov [RELOC(pdpt_low)], eax
 
 	; pdpt[510] -> pd, map at -2 GiB, 1 GiB each entry
 	mov eax, RELOC(pd)
-	or eax, WRITABLE | PRESENT
+	or eax, WrPr
 	mov [RELOC(pdpt) + 510 * 8], eax
 
 	; pd -> 0x00000000 - 0x00400000, 2 entries, 2 MiB each
-	mov dword [RELOC(pd) + 0], 0x000000 | HUGE | WRITABLE | PRESENT
-	mov dword [RELOC(pd) + 8], 0x200000 | HUGE | WRITABLE | PRESENT
+	mov dword [RELOC(pd) + 0], 0x000000 | Huge | WrPr
+	mov dword [RELOC(pd) + 8], 0x200000 | Huge | WrPr
 	ret
 
 setup_long_mode:
@@ -193,8 +194,14 @@ start64:
 	xor rax, rax
 	mov [pml4], rax
 
-	mov dword [KERNEL_BASE + 0xb8000], 0x073a0728
+	; Set up stack
+	mov rsp, init_stack
 
+	; Call rust code
+	call kmain
+
+	; In case we return, loop
+	cli
 hltspin:
 	hlt
 	jmp hltspin

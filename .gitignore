@@ -4,5 +4,9 @@ toolchain
 *.o
 *.bin
 *.iso
+
 *.txt
+*.html
+
+*.lock
 
