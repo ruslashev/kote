@@ -1,6 +1,9 @@
 global start
 
+%define KERNEL_BASE 0xffffffff80000000
 %define KERNEL_STACK_SZ 4096 * 2
+
+%define RELOC(x) (x - KERNEL_BASE)
 
 %macro print 1
 	mov ecx, %%loop_start - %%strdata
@@ -39,10 +42,10 @@ start:
 	cli
 
 	; Set up stack
-	mov esp, init_stack
+	mov esp, RELOC(init_stack)
 
 	; Save multiboot info
-	mov [mb_info], ebx
+	mov [RELOC(mb_info)], ebx
 	push eax
 
 	call clear_screen
@@ -57,10 +60,10 @@ start:
 	call enable_paging
 
 	; Load GDT
-	lgdt [gdt.ptr]
+	lgdt [RELOC(gdt.ptr_low)]
 
 	; Enter long mode
-	jmp 8:start64
+	jmp 8:start64_low
 
 initspin:
 	hlt
@@ -117,19 +120,29 @@ map_pages:
 %define HUGE     (1 << 7)
 %define WRITABLE (1 << 1)
 %define PRESENT  (1 << 0)
-	; PML4[0] -> PDPT
-	mov eax, pdpt
+	; pml4[0] -> pdpt_low (for startup)
+	mov eax, RELOC(pdpt_low)
 	or eax, WRITABLE | PRESENT
-	mov [pml4], eax
+	mov [RELOC(pml4)], eax
 
-	; PDPT[0] -> PD
-	mov eax, pd
+	; pml4[511] -> pdpt
+	mov eax, RELOC(pdpt)
 	or eax, WRITABLE | PRESENT
-	mov [pdpt], eax
+	mov [RELOC(pml4) + 511 * 8], eax
 
-	; PD -> 0x00000000 - 0x00400000
-	mov dword [pd + 0], 0x000000 | HUGE | WRITABLE | PRESENT
-	mov dword [pd + 8], 0x200000 | HUGE | WRITABLE | PRESENT
+	; pdpt_low[0] -> pd
+	mov eax, RELOC(pd)
+	or eax, WRITABLE | PRESENT
+	mov [RELOC(pdpt_low)], eax
+
+	; pdpt[510] -> pd, map at -2 GiB, 1 GiB each entry
+	mov eax, RELOC(pd)
+	or eax, WRITABLE | PRESENT
+	mov [RELOC(pdpt) + 510 * 8], eax
+
+	; pd -> 0x00000000 - 0x00400000, 2 entries, 2 MiB each
+	mov dword [RELOC(pd) + 0], 0x000000 | HUGE | WRITABLE | PRESENT
+	mov dword [RELOC(pd) + 8], 0x200000 | HUGE | WRITABLE | PRESENT
 	ret
 
 setup_long_mode:
@@ -149,7 +162,7 @@ setup_long_mode:
 
 enable_paging:
 	; Load PML4
-	mov eax, pml4
+	mov eax, RELOC(pml4)
 	mov cr3, eax
 
 	; Enable paging
@@ -160,8 +173,27 @@ enable_paging:
 	ret
 
 bits 64
+start64_low:
+	lgdt [gdt.ptr]
+
+	mov rax, start64
+	jmp rax
+
+section .text
 start64:
-	print "Hello, World!"
+	; Point segment registers to a null GDT entry
+	xor ax, ax
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+
+	; Clear low-memory page mapping
+	xor rax, rax
+	mov [pml4], rax
+
+	mov dword [KERNEL_BASE + 0xb8000], 0x073a0728
 
 hltspin:
 	hlt
@@ -182,9 +214,14 @@ gdt:
 .ptr:
 	dw $ - gdt - 1 ; size
 	dq gdt         ; offset (address)
+.ptr_low:
+	dw .ptr - gdt - 1
+	dq RELOC(gdt)
 
 section .bss
 pml4:
+	resb 4096
+pdpt_low:
 	resb 4096
 pdpt:
 	resb 4096
