@@ -1,14 +1,8 @@
 #![no_std]
 
+mod panic;
+
 const KERNEL_BASE: u64 = 0xffffffff80000000;
-
-use core::panic::PanicInfo;
-
-#[panic_handler]
-fn panic(_: &PanicInfo) -> !
-{
-	loop {}
-}
 
 #[no_mangle]
 pub fn kmain() -> !
