@@ -15,9 +15,7 @@ AS = nasm
 AFLAGS = -f elf64
 
 CARGO = cargo
-CFLAGS = -Z build-std=core \
-         --target kernel/arch/$(ARCH)/target.json \
-         --target-dir $(RUSTDIR)
+CFLAGS = --target kernel/arch/$(ARCH)/target.json
 
 LD = $(TOOLCHAIN)ld
 LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
