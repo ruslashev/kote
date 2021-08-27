@@ -1,0 +1,11 @@
+hard_tabs = true
+newline_style = "Unix"
+fn_call_width = 90
+single_line_if_else_max_width = 60
+
+unstable_features = true
+brace_style = "AlwaysNextLine"
+condense_wildcard_suffixes = true
+struct_field_align_threshold = 18
+reorder_impl_items = true
+group_imports = "StdExternalCrate"
