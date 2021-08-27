@@ -20,7 +20,8 @@ CFLAGS = --target kernel/arch/$(ARCH)/target.json
 LD = $(TOOLCHAIN)ld
 LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
          -Map $(BUILDDIR)/map.txt \
-         -z max-page-size=0x1000
+         -z max-page-size=0x1000 \
+         --gc-sections
 
 OBJD = $(TOOLCHAIN)objdump
 OFLAGS = -D -S -M intel --visualize-jumps --no-show-raw-insn -w

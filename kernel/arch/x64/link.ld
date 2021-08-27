@@ -10,20 +10,21 @@ SECTIONS {
 	. += SIZEOF_HEADERS;
 
 	.init : {
-		* (.multiboot .inittext)
+		KEEP (* (.multiboot))
+		* (.inittext)
 	}
 
 	. += KERNEL_BASE;
 
-	.text ALIGN (0x1000) : AT(ADDR(.text) - KERNEL_BASE) {
+	.text ALIGN (0x1000) : AT (ADDR(.text) - KERNEL_BASE) {
 		* (.text)
 	}
 
-	.data ALIGN (0x1000) : AT(ADDR(.data) - KERNEL_BASE) {
+	.data ALIGN (0x1000) : AT (ADDR(.data) - KERNEL_BASE) {
 		* (.data)
 	}
 
-	.bss  ALIGN (0x1000) : AT(ADDR(.bss)  - KERNEL_BASE) {
+	.bss  ALIGN (0x1000) : AT (ADDR(.bss)  - KERNEL_BASE) {
 		* (.bss)
 	}
 }
