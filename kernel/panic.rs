@@ -4,7 +4,9 @@ use core::ptr::write_volatile;
 use crate::consts::KERNEL_BASE;
 
 #[panic_handler]
-fn panic(_: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    printk!("{}\n", info);
+
     loop {}
 }
 
