@@ -13,11 +13,10 @@ mod serial;
 mod spinlock;
 
 #[no_mangle]
-pub fn kmain() -> !
-{
-	serial::init();
+pub fn kmain() -> ! {
+    serial::init();
 
-	printk!("Hello, World! {} + {} = {}\n", 1, 2, 1 + 2);
+    printk!("Hello, World! {} + {} = {}\n", 1, 2, 1 + 2);
 
-	loop {}
+    loop {}
 }
