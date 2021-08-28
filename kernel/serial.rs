@@ -1,5 +1,3 @@
-use core::fmt;
-
 use crate::arch::io::{inb, outb};
 use crate::panic::panic_early;
 
@@ -21,81 +19,58 @@ const COM_IER_RDI_BIT: u8 = 0x1; // Enable receiver data interrupt
 const COM_LSR_DATA: u8 = 0x01; // Data ready
 const COM_LSR_THRE: u8 = 0x20; // Transmitter holding register empty
 
-pub struct Serial();
-
-impl Serial
+pub fn init()
 {
-	pub fn new() -> Self
-	{
-		// Turn off the FIFO
-		outb(COM1_PORT + COM_FCR, 0);
+	// Turn off the FIFO
+	outb(COM1_PORT + COM_FCR, 0);
 
-		// Disable interrupts
-		outb(COM1_PORT + COM_IER, 0);
+	// Disable interrupts
+	outb(COM1_PORT + COM_IER, 0);
 
-		// Enable DLAB
-		outb(COM1_PORT + COM_LCR, COM_LCR_DLAB_BIT);
+	// Enable DLAB
+	outb(COM1_PORT + COM_LCR, COM_LCR_DLAB_BIT);
 
-		// Set speed to 38400 baud (115200 / 38400 = 3)
-		outb(COM1_PORT + COM_DLL, 3);
-		outb(COM1_PORT + COM_DLM, 0);
+	// Set speed to 38400 baud (115200 / 38400 = 3)
+	outb(COM1_PORT + COM_DLL, 3);
+	outb(COM1_PORT + COM_DLM, 0);
 
-		// 8 data bits, 1 stop bit, no parity, disable DLAB
-		outb(COM1_PORT + COM_LCR, 0b00000011);
+	// 8 data bits, 1 stop bit, no parity, disable DLAB
+	outb(COM1_PORT + COM_LCR, 0b00000011);
 
-		// FIFO: enable, clear, 14-byte size
-		outb(COM1_PORT + COM_FCR, 0b11000111);
+	// FIFO: enable, clear, 14-byte size
+	outb(COM1_PORT + COM_FCR, 0b11000111);
 
-		// Test: enable loopback mode
-		outb(COM1_PORT + COM_MCR, 0b00011110);
+	// Test: enable loopback mode
+	outb(COM1_PORT + COM_MCR, 0b00011110);
 
-		// Send byte
-		outb(COM1_PORT + COM_THR, 0x42);
+	// Send a byte
+	outb(COM1_PORT + COM_THR, 0x80);
 
-		if inb(COM1_PORT + COM_RBR) != 0x42 {
-			panic_early("Failed to init serial: didn't return the same byte as sent");
-		}
-
-		// Disable loopback, enable aux bits 1, 2
-		outb(COM1_PORT + COM_MCR, 0b00001111);
-
-		if inb(COM1_PORT + COM_LSR) == 0xff {
-			panic_early("Failed to init serial: LSR returned 0xFF");
-		}
-
-		// Enable receiver interrupts
-		// outb(COM1_PORT + COM_IER, COM_IER_RDI);
-		Serial {}
+	if inb(COM1_PORT + COM_RBR) != 0x80 {
+		panic_early("Failed to init serial: didn't return the same byte as sent");
 	}
 
-	pub fn read_byte(&self) -> u8
-	{
-		while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
+	// Disable loopback, enable aux bits 1, 2
+	outb(COM1_PORT + COM_MCR, 0b00001111);
 
-		return inb(COM1_PORT + COM_RBR);
+	if inb(COM1_PORT + COM_LSR) == 0xff {
+		panic_early("Failed to init serial: LSR returned 0xFF");
 	}
 
-	pub fn write_byte(&self, byte: u8)
-	{
-		while inb(COM1_PORT + COM_LSR) & COM_LSR_THRE == 0 {}
-
-		outb(COM1_PORT + COM_THR, byte);
-	}
-
-	pub fn write_string(&self, s: &str)
-	{
-		for b in s.bytes() {
-			self.write_byte(b);
-		}
-	}
+	// Enable receiver interrupts
+	// outb(COM1_PORT + COM_IER, COM_IER_RDI);
 }
 
-impl fmt::Write for Serial
+pub fn read_byte() -> u8
 {
-	fn write_str(&mut self, s: &str) -> fmt::Result
-	{
-		self.write_string(s);
+	while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
 
-		Ok(())
-	}
+	return inb(COM1_PORT + COM_RBR);
+}
+
+pub fn write_byte(byte: u8)
+{
+	while inb(COM1_PORT + COM_LSR) & COM_LSR_THRE == 0 {}
+
+	outb(COM1_PORT + COM_THR, byte);
 }

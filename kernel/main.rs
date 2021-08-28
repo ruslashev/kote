@@ -8,17 +8,16 @@ mod arch;
 
 mod consts;
 mod panic;
+mod printk;
 mod serial;
+mod spinlock;
 
 #[no_mangle]
 pub fn kmain() -> !
 {
-	let mut s = crate::serial::Serial::new();
+	serial::init();
 
-	s.write_string("Hello, World!\n");
-
-	use core::fmt::Write;
-	write!(s, "{} + {} = {}\n", 1, 2, 1 + 2).unwrap();
+	printk!("Hello, World! {} + {} = {}\n", 1, 2, 1 + 2);
 
 	loop {}
 }
