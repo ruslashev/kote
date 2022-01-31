@@ -7,23 +7,14 @@ use crate::spinlock::Spinlock;
 
 pub static PRINT_LOCK: Spinlock = Spinlock::new();
 
-pub struct Serial<'a>(&'a Spinlock);
+pub struct Serial;
 
-impl Serial<'_> {
-    pub fn get() -> Self {
-        Serial(&PRINT_LOCK)
-    }
-}
-
-impl core::fmt::Write for Serial<'_> {
+impl core::fmt::Write for Serial {
+    // NOTE: By itself makes no exclusivity guarantees
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        self.0.lock();
-
         for b in s.bytes() {
             serial::write_byte(b);
         }
-
-        self.0.unlock();
 
         Ok(())
     }
@@ -33,9 +24,14 @@ impl core::fmt::Write for Serial<'_> {
 macro_rules! printk {
     ($($arg:tt)*) => ({
         use core::fmt::Write;
+        use $crate::printk::{PRINT_LOCK, Serial};
 
-        let mut serial = $crate::printk::Serial::get();
+        let mut serial = Serial;
 
-        write!(&mut serial, "{}\n", format_args!($($arg)*)).unwrap()
+        PRINT_LOCK.lock();
+
+        write!(&mut serial, "{}\n", format_args!($($arg)*)).unwrap();
+
+        PRINT_LOCK.unlock();
     });
 }
