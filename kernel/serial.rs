@@ -67,7 +67,7 @@ pub fn init() {
 pub fn read_byte() -> u8 {
     while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
 
-    return inb(COM1_PORT + COM_RBR);
+    inb(COM1_PORT + COM_RBR)
 }
 
 pub fn write_byte(byte: u8) {

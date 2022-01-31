@@ -11,7 +11,7 @@ pub struct Serial<'a>(&'a Spinlock);
 
 impl Serial<'_> {
     pub fn get() -> Self {
-        Serial { 0: &PRINT_LOCK }
+        Serial(&PRINT_LOCK)
     }
 }
 

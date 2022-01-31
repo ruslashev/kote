@@ -4,6 +4,7 @@
 
 #![no_std]
 #![allow(dead_code)]
+#![allow(clippy::empty_loop)]
 
 #[macro_use]
 mod printk;
