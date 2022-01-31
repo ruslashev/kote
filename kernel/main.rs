@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #![no_std]
-#![feature(asm)]
 #![allow(dead_code)]
 
 #[macro_use]
