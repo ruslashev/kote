@@ -22,7 +22,9 @@ mod spinlock;
 pub fn kmain() -> ! {
     serial::init();
 
-    printk!("Hello, World! {} + {} = {}\n", 1, 2, 1 + 2);
+    printk!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
+
+    printk!("lole");
 
     panic!("oops!");
 

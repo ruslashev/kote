@@ -9,7 +9,7 @@ use crate::consts::KERNEL_BASE;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    printk!("{}\n", info);
+    printk!("{}", info);
 
     loop {}
 }

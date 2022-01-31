@@ -31,9 +31,11 @@ impl core::fmt::Write for Serial<'_> {
 
 #[macro_export]
 macro_rules! printk {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => ({
         use core::fmt::Write;
 
-        $crate::printk::Serial::get().write_fmt(format_args!($($arg)*)).unwrap();
-    };
+        let mut serial = $crate::printk::Serial::get();
+
+        write!(&mut serial, "{}\n", format_args!($($arg)*)).unwrap()
+    });
 }
