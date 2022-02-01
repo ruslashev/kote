@@ -28,10 +28,8 @@ macro_rules! printk {
 
         let mut serial = Serial;
 
-        PRINT_LOCK.lock();
+        PRINT_LOCK.guard();
 
         write!(&mut serial, "{}\n", format_args!($($arg)*)).unwrap();
-
-        PRINT_LOCK.unlock();
     });
 }
