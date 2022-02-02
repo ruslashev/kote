@@ -14,19 +14,20 @@ mod printk;
 mod arch;
 
 mod consts;
+mod multiboot;
 mod panic;
 mod serial;
 mod spinlock;
+mod utils;
 
 #[no_mangle]
 pub fn kmain() -> ! {
     serial::init();
+    multiboot::init();
 
     printk!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
 
     printk!("lole");
-
-    panic!("oops!");
 
     loop {}
 }

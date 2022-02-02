@@ -3,6 +3,7 @@
 ; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 global start
+global mb_info
 
 extern kmain
 
@@ -35,10 +36,20 @@ mb_start:
 	dd MB_LENGTH
 	dd MB_CHKSUM
 
+	; framebuffer tag
+	dw 5  ; type
+	dw 0  ; flags
+	dd 20 ; size
+	dd 0  ; width
+	dd 0  ; height
+	dd 0  ; depth
+
+	dd 0  ; padding for 8-byte alignment
+
 	; end tag
-	dw 0
-	dw 0
-	dd 8
+	dw 0 ; type
+	dw 0 ; flags
+	dd 8 ; size
 mb_end:
 
 bits 32
@@ -195,8 +206,8 @@ start64:
 	mov ss, ax
 
 	; Clear low-memory page mapping
-	xor rax, rax
-	mov [pml4], rax
+	; xor rax, rax
+	; mov [pml4], rax
 
 	; Set up stack
 	mov rsp, init_stack
