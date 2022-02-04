@@ -62,6 +62,7 @@ pub fn init() {
             0 => break,
             4 => parse_mem_info(header),
             6 => parse_mem_map(header),
+            // 8 => parse_framebuffer_info(header),
             _ => {}
         }
 
@@ -152,5 +153,77 @@ fn parse_mem_map(header: *const u32) {
         }
 
         total_size += entry_size;
+    }
+}
+
+fn parse_framebuffer_info(header: *const u32) {
+    /*
+     *        +--------------------+
+     * u32    | type = 8           |
+     * u32    | size               |
+     * u64    | framebuffer_addr   |
+     * u32    | framebuffer_pitch  |
+     * u32    | framebuffer_width  |
+     * u32    | framebuffer_height |
+     * u8     | framebuffer_bpp    |
+     * u8     | framebuffer_type   |
+     * u8     | reserved           |
+     * varies | color_info         |
+     *        +--------------------+
+     *
+     * The field `framebuffer_addr` contains framebuffer physical address. This field is 64-bit wide
+     * but bootloader should set it under 4GiB if possible for compatibility with payloads which
+     * aren't aware of PAE or amd64. The field `framebuffer_pitch` contains pitch in bytes. The
+     * fields `framebuffer_width`, `framebuffer_height` contain framebuffer dimensions in pixels.
+     * The field `framebuffer_bpp` contains number of bits per pixel. `reserved` always contains 0
+     * in current version of specification and must be ignored by OS image.
+     *
+     * If `framebuffer_type` is set to `1` it means direct RGB color. Then color_type is defined as
+     * follows:
+     *
+     *       +----------------------------------+
+     * u8    | framebuffer_red_field_position   |
+     * u8    | framebuffer_red_mask_size        |
+     * u8    | framebuffer_green_field_position |
+     * u8    | framebuffer_green_mask_size      |
+     * u8    | framebuffer_blue_field_position  |
+     * u8    | framebuffer_blue_mask_size       |
+     *       +----------------------------------+
+     */
+
+    #[repr(C, packed)]
+    #[derive(Debug, Clone, Copy)]
+    struct FrameBufferTag {
+        ttype:         u32,
+        size:          u32,
+        addr:          u64,
+        pitch:         u32,
+        width:         u32,
+        height:        u32,
+        bpp:           u8,
+        ftype:         u8,
+        reserved:      u8,
+        red_pos:       u8,
+        red_mask_sz:   u8,
+        green_pos:     u8,
+        green_mask_sz: u8,
+        blue_pos:      u8,
+        blue_mask_sz:  u8,
+    }
+
+    let fb = unsafe { header.cast::<FrameBufferTag>().read() };
+
+    printk!("fb = {:#?}", fb);
+
+    putpixel(fb.addr, fb.pitch, fb.bpp, 0, 0);
+}
+
+fn putpixel(addr: u64, pitch: u32, bpp: u8, x: u32, y: u32) {
+    let bpp = bpp as u32 / 8;
+    let pos = y * pitch + x * bpp;
+    let ptr = (addr + pos as u64) as *mut u32;
+
+    unsafe {
+        ptr.write(u32::max_value());
     }
 }
