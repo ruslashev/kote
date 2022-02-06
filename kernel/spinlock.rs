@@ -35,7 +35,7 @@ impl Spinlock {
     pub fn guard(&self) -> SpinlockGuard {
         self.lock();
 
-        SpinlockGuard { lock: &self }
+        SpinlockGuard { lock: self }
     }
 }
 
