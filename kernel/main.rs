@@ -13,6 +13,7 @@ mod printk;
 #[path = "arch/x64/mod.rs"]
 mod arch;
 
+mod console;
 mod consts;
 mod multiboot;
 mod panic;
@@ -23,7 +24,8 @@ mod utils;
 #[no_mangle]
 pub fn kmain() -> ! {
     serial::init();
-    multiboot::init();
+    let info = multiboot::init();
+    console::init(&info);
 
     printk!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
 

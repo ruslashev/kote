@@ -16,22 +16,22 @@ extern "C" {
 
 #[derive(Default)]
 pub struct BootloaderInfo {
-    framebuffer: FramebufferInfo,
+    pub framebuffer: FramebufferInfo,
 }
 
 #[derive(Default)]
 pub struct FramebufferInfo {
-    addr: usize,
-    width: u32,
-    height: u32,
-    pitch: u32,
-    bpp: u8,
-    red_pos: u8,
-    red_mask_sz: u8,
-    green_pos: u8,
-    green_mask_sz: u8,
-    blue_pos: u8,
-    blue_mask_sz: u8,
+    pub addr: u64,
+    pub width: u32,
+    pub height: u32,
+    pub pitch: u32,
+    pub bpp: u8,
+    pub red_pos: u8,
+    pub red_mask_sz: u8,
+    pub green_pos: u8,
+    pub green_mask_sz: u8,
+    pub blue_pos: u8,
+    pub blue_mask_sz: u8,
 }
 
 pub fn init() -> BootloaderInfo {
@@ -239,7 +239,7 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
     printk!("fb = {:#?}", fb);
 
     info.framebuffer = FramebufferInfo {
-        addr: usize::try_from(fb.addr).unwrap(),
+        addr: fb.addr,
         width: fb.width,
         height: fb.height,
         pitch: fb.pitch,
