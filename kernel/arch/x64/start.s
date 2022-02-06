@@ -134,10 +134,11 @@ check_long_mode:
 	jmp initspin
 
 map_pages:
+%define Addr (1 << 21)
 %define Huge (1 << 7)
 %define WrPr (1 << 1) | (1 << 0) ; Writable and present
-	; pml4[0] -> pdpt_low (for startup)
-	mov eax, RELOC(pdpt_low)
+	; pml4[0] -> pdpt
+	mov eax, RELOC(pdpt)
 	or eax, WrPr
 	mov [RELOC(pml4)], eax
 
@@ -146,19 +147,19 @@ map_pages:
 	or eax, WrPr
 	mov [RELOC(pml4) + 511 * 8], eax
 
-	; pdpt_low[0] -> pd
+	; pdpt[0] -> pd
 	mov eax, RELOC(pd)
 	or eax, WrPr
-	mov [RELOC(pdpt_low)], eax
+	mov [RELOC(pdpt)], eax
 
-	; pdpt[510] -> pd, map at -2 GiB, 1 GiB each entry
+	; pdpt[510] -> pd, map at -2 GiB
 	mov eax, RELOC(pd)
 	or eax, WrPr
 	mov [RELOC(pdpt) + 510 * 8], eax
 
-	; pd -> 0x00000000 - 0x00400000, 2 entries, 2 MiB each
-	mov dword [RELOC(pd) + 0], 0x000000 | Huge | WrPr
-	mov dword [RELOC(pd) + 8], 0x200000 | Huge | WrPr
+	; pd -> 0x00000000 - 0x00400000, identity mapping. 2 entries, 2 MiB each
+	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
 	ret
 
 setup_long_mode:
@@ -205,10 +206,6 @@ start64:
 	mov gs, ax
 	mov ss, ax
 
-	; Clear low-memory page mapping
-	; xor rax, rax
-	; mov [pml4], rax
-
 	; Set up stack
 	mov rsp, init_stack
 
@@ -242,8 +239,6 @@ gdt:
 
 section .bss
 pml4:
-	resb 4096
-pdpt_low:
 	resb 4096
 pdpt:
 	resb 4096
