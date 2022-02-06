@@ -58,6 +58,10 @@ qemu: $(KERNISO)
 
 debug: $(DISAS)
 
+clippy:
+	@$(call ECHO, cargo)
+	@$(CARGO) clippy $(CFLAGS) -- -W clippy::all
+
 $(KERNBIN): $(OBJS)
 	@$(call ECHO, ld)
 	@$(LD) $(LFLAGS) $^ -o $@
@@ -100,5 +104,5 @@ clean:
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
 
-.PHONY: all debug qemu clean
+.PHONY: all qemu debug clippy clean
 .DELETE_ON_ERROR:
