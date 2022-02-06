@@ -21,17 +21,17 @@ pub struct BootloaderInfo {
 
 #[derive(Default)]
 pub struct FramebufferInfo {
-    addr:          usize,
-    width:         u32,
-    height:        u32,
-    pitch:         u32,
-    bpp:           u8,
-    red_pos:       u8,
-    red_mask_sz:   u8,
-    green_pos:     u8,
+    addr: usize,
+    width: u32,
+    height: u32,
+    pitch: u32,
+    bpp: u8,
+    red_pos: u8,
+    red_mask_sz: u8,
+    green_pos: u8,
     green_mask_sz: u8,
-    blue_pos:      u8,
-    blue_mask_sz:  u8,
+    blue_pos: u8,
+    blue_mask_sz: u8,
 }
 
 pub fn init() -> BootloaderInfo {
@@ -147,9 +147,9 @@ fn parse_mem_map(header: *const u32) {
     #[repr(C, packed)]
     struct Entry {
         base_addr: u64,
-        length:    u64,
-        etype:     u32,
-        reserved:  u32,
+        length: u64,
+        etype: u32,
+        reserved: u32,
     }
 
     let tag_size = unsafe { header.offset(1).read() };
@@ -217,21 +217,21 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
     #[repr(C, packed)]
     #[derive(Debug, Clone, Copy)]
     struct FrameBufferTag {
-        ttype:         u32,
-        size:          u32,
-        addr:          u64,
-        pitch:         u32,
-        width:         u32,
-        height:        u32,
-        bpp:           u8,
-        ftype:         u8,
-        reserved:      u8,
-        red_pos:       u8,
-        red_mask_sz:   u8,
-        green_pos:     u8,
+        ttype: u32,
+        size: u32,
+        addr: u64,
+        pitch: u32,
+        width: u32,
+        height: u32,
+        bpp: u8,
+        ftype: u8,
+        reserved: u8,
+        red_pos: u8,
+        red_mask_sz: u8,
+        green_pos: u8,
         green_mask_sz: u8,
-        blue_pos:      u8,
-        blue_mask_sz:  u8,
+        blue_pos: u8,
+        blue_mask_sz: u8,
     }
 
     let fb = unsafe { header.cast::<FrameBufferTag>().read() };
@@ -239,16 +239,16 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
     printk!("fb = {:#?}", fb);
 
     info.framebuffer = FramebufferInfo {
-        addr:          usize::try_from(fb.addr).unwrap(),
-        width:         fb.width,
-        height:        fb.height,
-        pitch:         fb.pitch,
-        bpp:           fb.bpp,
-        red_pos:       fb.red_pos,
-        red_mask_sz:   fb.red_mask_sz,
-        green_pos:     fb.green_pos,
+        addr: usize::try_from(fb.addr).unwrap(),
+        width: fb.width,
+        height: fb.height,
+        pitch: fb.pitch,
+        bpp: fb.bpp,
+        red_pos: fb.red_pos,
+        red_mask_sz: fb.red_mask_sz,
+        green_pos: fb.green_pos,
         green_mask_sz: fb.green_mask_sz,
-        blue_pos:      fb.blue_pos,
-        blue_mask_sz:  fb.blue_mask_sz,
+        blue_pos: fb.blue_pos,
+        blue_mask_sz: fb.blue_mask_sz,
     };
 }
