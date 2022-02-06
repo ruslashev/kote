@@ -14,7 +14,27 @@ extern "C" {
     static mb_info: u64;
 }
 
-pub fn init() {
+#[derive(Default)]
+pub struct BootloaderInfo {
+    framebuffer: FramebufferInfo,
+}
+
+#[derive(Default)]
+pub struct FramebufferInfo {
+    addr:          usize,
+    width:         u32,
+    height:        u32,
+    pitch:         u32,
+    bpp:           u8,
+    red_pos:       u8,
+    red_mask_sz:   u8,
+    green_pos:     u8,
+    green_mask_sz: u8,
+    blue_pos:      u8,
+    blue_mask_sz:  u8,
+}
+
+pub fn init() -> BootloaderInfo {
     /* Boot information consists of fixed part and a series of tags.
      * Its start is 8-bytes aligned. Fixed part is as following:
      *
@@ -41,6 +61,7 @@ pub fn init() {
      * tag of type `0` and size `8`.
      */
 
+    let mut info = BootloaderInfo::default();
     let mut start = unsafe { mb_info };
     let alignment = 8;
 
@@ -62,13 +83,15 @@ pub fn init() {
             0 => break,
             4 => parse_mem_info(header),
             6 => parse_mem_map(header),
-            8 => parse_framebuffer_info(header),
+            8 => parse_framebuffer_info(header, &mut info),
             _ => {}
         }
 
         start += aligned_size;
         total_size -= aligned_size;
     }
+
+    info
 }
 
 fn parse_mem_info(header: *const u32) {
@@ -156,7 +179,7 @@ fn parse_mem_map(header: *const u32) {
     }
 }
 
-fn parse_framebuffer_info(header: *const u32) {
+fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
     /*
      *        +--------------------+
      * u32    | type = 8           |
@@ -215,15 +238,17 @@ fn parse_framebuffer_info(header: *const u32) {
 
     printk!("fb = {:#?}", fb);
 
-    putpixel(fb.addr, fb.pitch, fb.bpp, 0, 0);
-}
-
-fn putpixel(addr: u64, pitch: u32, bpp: u8, x: u32, y: u32) {
-    let bpp = bpp as u32 / 8;
-    let pos = y * pitch + x * bpp;
-    let ptr = (addr + pos as u64) as *mut u32;
-
-    unsafe {
-        ptr.write(u32::max_value());
-    }
+    info.framebuffer = FramebufferInfo {
+        addr:          usize::try_from(fb.addr).unwrap(),
+        width:         fb.width,
+        height:        fb.height,
+        pitch:         fb.pitch,
+        bpp:           fb.bpp,
+        red_pos:       fb.red_pos,
+        red_mask_sz:   fb.red_mask_sz,
+        green_pos:     fb.green_pos,
+        green_mask_sz: fb.green_mask_sz,
+        blue_pos:      fb.blue_pos,
+        blue_mask_sz:  fb.blue_mask_sz,
+    };
 }
