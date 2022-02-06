@@ -160,6 +160,18 @@ map_pages:
 	; pd -> 0x00000000 - 0x00400000, identity mapping. 2 entries, 2 MiB each
 	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
 	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
+
+	; Temporary identity mapping for framebuffer: 0xfd000000..0xfdc00000
+	; pdpt[3] -> pd_fb
+	mov eax, RELOC(pd_fb)
+	or eax, WrPr
+	mov [RELOC(pdpt) + 3 * 8], eax
+	mov dword [RELOC(pd_fb) + 488 * 8], (2024 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd_fb) + 489 * 8], (2025 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd_fb) + 490 * 8], (2026 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd_fb) + 491 * 8], (2027 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd_fb) + 492 * 8], (2028 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd_fb) + 493 * 8], (2029 * Addr) | Huge | WrPr
 	ret
 
 setup_long_mode:
@@ -243,6 +255,8 @@ pml4:
 pdpt:
 	resb 4096
 pd:
+	resb 4096
+pd_fb:
 	resb 4096
 init_stack_bottom:
 	resb KERNEL_STACK_SZ

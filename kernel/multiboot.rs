@@ -62,7 +62,7 @@ pub fn init() {
             0 => break,
             4 => parse_mem_info(header),
             6 => parse_mem_map(header),
-            // 8 => parse_framebuffer_info(header),
+            8 => parse_framebuffer_info(header),
             _ => {}
         }
 
