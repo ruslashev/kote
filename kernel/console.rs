@@ -3,6 +3,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::multiboot::BootloaderInfo;
+use crate::spinlock::SpinlockMutex;
+
+static CONSOLE: SpinlockMutex<Console> = SpinlockMutex::new(Console::uninit());
 
 struct Console {
     addr: usize,
@@ -45,35 +48,33 @@ impl Console {
     }
 }
 
-static mut CONSOLE: Console = Console::uninit();
-
 pub fn init(info: &BootloaderInfo) {
-    unsafe {
-        CONSOLE = Console::from_info(info);
+    let mut cons = CONSOLE.guard();
 
-        let mut sx;
-        let sz = 50;
+    *cons = Console::from_info(info);
 
-        for y in 0..sz {
-            sx = sz * 0;
-            for x in 0..sz {
-                CONSOLE.putpixel(sx + x, y, u32::max_value());
-            }
+    let mut sx;
+    let sz = 50;
 
-            sx = sz * 1;
-            for x in 0..sz {
-                CONSOLE.putpixel(sx + x, y, 0xff0000);
-            }
+    for y in 0..sz {
+        sx = sz * 0;
+        for x in 0..sz {
+            cons.putpixel(sx + x, y, u32::max_value());
+        }
 
-            sx = sz * 2;
-            for x in 0..sz {
-                CONSOLE.putpixel(sx + x, y, 0x00ff00);
-            }
+        sx = sz * 1;
+        for x in 0..sz {
+            cons.putpixel(sx + x, y, 0xff0000);
+        }
 
-            sx = sz * 3;
-            for x in 0..sz {
-                CONSOLE.putpixel(sx + x, y, 0x0000ff);
-            }
+        sx = sz * 2;
+        for x in 0..sz {
+            cons.putpixel(sx + x, y, 0x00ff00);
+        }
+
+        sx = sz * 3;
+        for x in 0..sz {
+            cons.putpixel(sx + x, y, 0x0000ff);
         }
     }
 }
