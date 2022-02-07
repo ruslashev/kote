@@ -2,11 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::lazy::OnceCell;
 use crate::multiboot::BootloaderInfo;
 use crate::spinlock::SpinlockMutex;
 
-static CONSOLE: SpinlockMutex<Console> = SpinlockMutex::new(Console::uninit());
+static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
 
+#[derive(Debug)]
 struct Console {
     addr: usize,
     width: u32,
@@ -16,16 +18,6 @@ struct Console {
 }
 
 impl Console {
-    const fn uninit() -> Self {
-        Console {
-            addr: 0,
-            width: 0,
-            height: 0,
-            pitch: 0,
-            bytes_per_pixel: 0,
-        }
-    }
-
     fn from_info(info: &BootloaderInfo) -> Self {
         let fb = &info.framebuffer;
 
@@ -49,9 +41,11 @@ impl Console {
 }
 
 pub fn init(info: &BootloaderInfo) {
-    let mut cons = CONSOLE.guard();
+    let cell = CONSOLE.guard();
 
-    *cons = Console::from_info(info);
+    cell.set(Console::from_info(info)).unwrap();
+
+    let cons = cell.get().unwrap();
 
     let mut sx;
     let sz = 50;

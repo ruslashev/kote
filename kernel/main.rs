@@ -5,6 +5,7 @@
 #![no_std]
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
+#![feature(once_cell)]
 
 #[macro_use]
 mod printk;
