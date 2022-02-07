@@ -27,9 +27,9 @@ pub fn kmain() -> ! {
     let info = multiboot::init();
     console::init(&info);
 
-    printk!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
+    println!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
 
-    printk!("lole");
+    println!("lole");
 
     loop {}
 }

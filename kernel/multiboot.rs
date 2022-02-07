@@ -169,7 +169,7 @@ fn parse_mem_map(header: *const u32) {
         let length = entry.length;
         let etype = entry.etype;
 
-        printk!("addr={:<12x} len={:<12} type={}", base_addr, length, etype);
+        println!("addr={:<12x} len={:<12} type={}", base_addr, length, etype);
 
         unsafe {
             entries = entries.add(1);
@@ -236,7 +236,7 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
 
     let fb = unsafe { header.cast::<FrameBufferTag>().read() };
 
-    printk!("fb = {:#?}", fb);
+    println!("fb = {:#?}", fb);
 
     info.framebuffer = FramebufferInfo {
         addr: fb.addr,

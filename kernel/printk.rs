@@ -21,7 +21,7 @@ impl core::fmt::Write for Serial {
 }
 
 #[macro_export]
-macro_rules! printk {
+macro_rules! println {
     ($($arg:tt)*) => ({
         use core::fmt::Write;
         use $crate::printk::{PRINT_LOCK, Serial};
@@ -38,14 +38,14 @@ macro_rules! printk {
 #[macro_export]
 macro_rules! dbg {
     () => {
-        $crate::printk!("[{}:{}]", file!(), line!())
+        $crate::println!("[{}:{}]", file!(), line!())
     };
     ($val:expr $(,)?) => {
         // Use of `match` here is intentional because it affects the lifetimes
         // of temporaries - https://stackoverflow.com/a/48732525/1063961
         match $val {
             tmp => {
-                $crate::printk!("[{}:{}] {} = {:#?}", file!(), line!(), stringify!($val), &tmp);
+                $crate::println!("[{}:{}] {} = {:#?}", file!(), line!(), stringify!($val), &tmp);
                 tmp
             }
         }
