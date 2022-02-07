@@ -2,35 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::serial;
-use crate::spinlock::Spinlock;
-
-pub static PRINT_LOCK: Spinlock = Spinlock::new();
-
-pub struct Serial;
-
-impl core::fmt::Write for Serial {
-    // NOTE: By itself makes no exclusivity guarantees
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        for b in s.bytes() {
-            serial::write_byte(b);
-        }
-
-        Ok(())
-    }
-}
-
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => ({
         use core::fmt::Write;
-        use $crate::printk::{PRINT_LOCK, Serial};
+        use $crate::serial::SERIAL_LOCK;
 
-        let mut serial = Serial;
+        let mut serial_guard = SERIAL_LOCK.guard();
 
-        PRINT_LOCK.guard();
-
-        write!(&mut serial, "{}\n", format_args!($($arg)*)).unwrap();
+        write!(&mut serial_guard.data, "{}\n", format_args!($($arg)*)).unwrap();
     });
 }
 

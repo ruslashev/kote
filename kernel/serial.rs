@@ -4,6 +4,7 @@
 
 use crate::arch::io::{inb, outb};
 use crate::panic::panic_early;
+use crate::spinlock::SpinlockMutex;
 
 const COM1_PORT: u16 = 0x3f8;
 
@@ -22,6 +23,35 @@ const COM_IER_RDI_BIT: u8 = 0x1; // Enable receiver data interrupt
 
 const COM_LSR_DATA: u8 = 0x01; // Data ready
 const COM_LSR_THRE: u8 = 0x20; // Transmitter holding register empty
+
+pub static SERIAL_LOCK: SpinlockMutex<Serial> = SpinlockMutex::new(Serial {});
+
+pub struct Serial;
+
+impl Serial {
+    pub fn read_byte(&self) -> u8 {
+        while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
+
+        inb(COM1_PORT + COM_RBR)
+    }
+
+    pub fn write_byte(&self, byte: u8) {
+        while inb(COM1_PORT + COM_LSR) & COM_LSR_THRE == 0 {}
+
+        outb(COM1_PORT + COM_THR, byte);
+    }
+}
+
+impl core::fmt::Write for Serial {
+    // NOTE: By itself makes no exclusivity guarantees
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for b in s.bytes() {
+            self.write_byte(b);
+        }
+
+        Ok(())
+    }
+}
 
 pub fn init() {
     // Turn off the FIFO
@@ -62,16 +92,4 @@ pub fn init() {
 
     // Enable receiver interrupts
     // outb(COM1_PORT + COM_IER, COM_IER_RDI);
-}
-
-pub fn read_byte() -> u8 {
-    while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
-
-    inb(COM1_PORT + COM_RBR)
-}
-
-pub fn write_byte(byte: u8) {
-    while inb(COM1_PORT + COM_LSR) & COM_LSR_THRE == 0 {}
-
-    outb(COM1_PORT + COM_THR, byte);
 }

@@ -9,12 +9,12 @@ use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-pub struct Spinlock {
+struct Spinlock {
     locked: AtomicBool,
 }
 
 impl Spinlock {
-    pub const fn new() -> Self {
+    const fn new() -> Self {
         Spinlock {
             locked: AtomicBool::new(false),
         }
@@ -33,12 +33,6 @@ impl Spinlock {
     fn unlock(&self) {
         self.locked.store(false, Ordering::Release);
     }
-
-    pub fn guard(&self) -> SpinlockGuard {
-        self.lock();
-
-        SpinlockGuard { lock: self }
-    }
 }
 
 pub struct SpinlockMutex<T: ?Sized> {
@@ -55,17 +49,27 @@ impl<T> SpinlockMutex<T> {
             lock: Spinlock::new(),
         }
     }
+
+    pub fn guard(&self) -> SpinlockGuard<T> {
+        self.lock.lock();
+
+        SpinlockGuard {
+            lock: &self.lock,
+            data: unsafe { &mut *self.data.get() },
+        }
+    }
 }
 
 unsafe impl<T> Send for SpinlockMutex<T> {}
 
 unsafe impl<T> Sync for SpinlockMutex<T> {}
 
-pub struct SpinlockGuard<'a> {
+pub struct SpinlockGuard<'a, T> {
     lock: &'a Spinlock,
+    pub data: &'a mut T,
 }
 
-impl<'a> Drop for SpinlockGuard<'a> {
+impl<'a, T> Drop for SpinlockGuard<'a, T> {
     fn drop(&mut self) {
         self.lock.unlock();
     }
