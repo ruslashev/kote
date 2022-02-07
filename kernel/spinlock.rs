@@ -7,6 +7,7 @@
 
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicBool, Ordering};
 
 struct Spinlock {
@@ -72,5 +73,19 @@ pub struct SpinlockGuard<'a, T> {
 impl<'a, T> Drop for SpinlockGuard<'a, T> {
     fn drop(&mut self) {
         self.lock.unlock();
+    }
+}
+
+impl<T> Deref for SpinlockGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.data
+    }
+}
+
+impl<T> DerefMut for SpinlockGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.data
     }
 }

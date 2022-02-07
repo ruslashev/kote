@@ -8,9 +8,9 @@ macro_rules! println {
         use core::fmt::Write;
         use $crate::serial::SERIAL_LOCK;
 
-        let mut serial_guard = SERIAL_LOCK.guard();
+        let mut data = SERIAL_LOCK.guard();
 
-        write!(&mut serial_guard.data, "{}\n", format_args!($($arg)*)).unwrap();
+        write!(&mut data, "{}\n", format_args!($($arg)*)).unwrap();
     });
 }
 
