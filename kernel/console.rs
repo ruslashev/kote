@@ -14,64 +14,20 @@ const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
 
 #[derive(Debug)]
 struct Console {
-    addr: usize,
-    width: u32,
-    height: u32,
-    pitch: u32,
-    bytes_per_pixel: u8,
+    fb: Framebuffer,
     font: Font,
 }
 
 impl Console {
     fn from_info(info: &BootloaderInfo) -> Self {
-        let fb = &info.framebuffer;
-
         Console {
-            addr: usize::try_from(fb.addr).unwrap(),
-            width: fb.width,
-            height: fb.height,
-            pitch: fb.pitch,
-            bytes_per_pixel: fb.bpp / 8,
+            fb: Framebuffer::from_info(info),
             font: Font::from_bytes(FONT),
         }
     }
 
-    fn putpixel(&self, x: u32, y: u32, color: u32) {
-        let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
-        let ptr = (self.addr + pos as usize) as *mut u32;
-
-        unsafe {
-            ptr.write(color);
-        }
-    }
-
     fn write_byte(&self, b: u8) {
-        let offset = self.font.height * b as usize;
-        let glyph = &self.font.glyphs[offset..offset + self.font.height];
-
-        let sx: u32 = 0;
-        let sy: u32 = 0;
-
-        let mut y = sy;
-        let mut x;
-
-        for byte in glyph {
-            let mut copy = *byte;
-            x = sx + self.font.width;
-
-            for _ in 0..8 {
-                let bit = copy & 1;
-
-                if bit == 1 {
-                    self.putpixel(x, y, 0xffffff);
-                }
-
-                x -= 1;
-                copy >>= 1;
-            }
-
-            y += 1;
-        }
+        self.fb.draw_char(b, &self.font);
     }
 }
 
@@ -92,6 +48,67 @@ impl Font {
             width: 8,
             height: bytes[3] as usize,
             glyphs: &bytes[4..],
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Framebuffer {
+    addr: usize,
+    width: u32,
+    height: u32,
+    pitch: u32,
+    bytes_per_pixel: u8,
+}
+
+impl Framebuffer {
+    fn from_info(info: &BootloaderInfo) -> Self {
+        let fb = &info.framebuffer;
+
+        Framebuffer {
+            addr: usize::try_from(fb.addr).unwrap(),
+            width: fb.width,
+            height: fb.height,
+            pitch: fb.pitch,
+            bytes_per_pixel: fb.bpp / 8,
+        }
+    }
+
+    fn draw_pixel(&self, x: u32, y: u32, color: u32) {
+        let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
+        let ptr = (self.addr + pos as usize) as *mut u32;
+
+        unsafe {
+            ptr.write(color);
+        }
+    }
+
+    fn draw_char(&self, b: u8, font: &Font) {
+        let offset = font.height * b as usize;
+        let glyph = &font.glyphs[offset..offset + font.height];
+
+        let sx: u32 = 0;
+        let sy: u32 = 0;
+
+        let mut y = sy;
+        let mut x;
+
+        for byte in glyph {
+            let mut copy = *byte;
+            x = sx + font.width;
+
+            for _ in 0..8 {
+                let bit = copy & 1;
+
+                if bit == 1 {
+                    self.draw_pixel(x, y, 0xffffff);
+                }
+
+                x -= 1;
+                copy >>= 1;
+            }
+
+            y += 1;
         }
     }
 }
