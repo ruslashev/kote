@@ -5,6 +5,8 @@
 // A very simple, and far from being the best, spinlock. A good implementation should hold
 // owndership of the data that is supposed to have a mutually exlusive access.
 
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Spinlock {
@@ -38,6 +40,26 @@ impl Spinlock {
         SpinlockGuard { lock: self }
     }
 }
+
+pub struct SpinlockMutex<T: ?Sized> {
+    marker: PhantomData<T>,
+    lock: Spinlock,
+    data: UnsafeCell<T>,
+}
+
+impl<T> SpinlockMutex<T> {
+    pub const fn new(data: T) -> Self {
+        SpinlockMutex {
+            marker: PhantomData,
+            data: UnsafeCell::new(data),
+            lock: Spinlock::new(),
+        }
+    }
+}
+
+unsafe impl<T> Send for SpinlockMutex<T> {}
+
+unsafe impl<T> Sync for SpinlockMutex<T> {}
 
 pub struct SpinlockGuard<'a> {
     lock: &'a Spinlock,
