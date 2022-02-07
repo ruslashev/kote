@@ -49,15 +49,35 @@ impl Console {
         let offset = self.font.height * b as usize;
         let glyph = &self.font.glyphs[offset..offset + self.font.height];
 
+        let sx: u32 = 0;
+        let sy: u32 = 0;
+
+        let mut y = sy;
+        let mut x;
+
         for byte in glyph {
-            println!("{:08b}", byte);
+            let mut copy = *byte;
+            x = sx + self.font.width;
+
+            for _ in 0..8 {
+                let bit = copy & 1;
+
+                if bit == 1 {
+                    self.putpixel(x, y, 0xffffff);
+                }
+
+                x -= 1;
+                copy >>= 1;
+            }
+
+            y += 1;
         }
     }
 }
 
 #[derive(Debug)]
 struct Font {
-    width: usize,
+    width: u32,
     height: usize,
     glyphs: &'static [u8],
 }
@@ -82,31 +102,6 @@ pub fn init(info: &BootloaderInfo) {
     cell.set(Console::from_info(info)).unwrap();
 
     let cons = cell.get().unwrap();
-
-    let mut sx;
-    let sz = 50;
-
-    for y in 0..sz {
-        sx = sz * 0;
-        for x in 0..sz {
-            cons.putpixel(sx + x, y, u32::max_value());
-        }
-
-        sx = sz * 1;
-        for x in 0..sz {
-            cons.putpixel(sx + x, y, 0xff0000);
-        }
-
-        sx = sz * 2;
-        for x in 0..sz {
-            cons.putpixel(sx + x, y, 0x00ff00);
-        }
-
-        sx = sz * 3;
-        for x in 0..sz {
-            cons.putpixel(sx + x, y, 0x0000ff);
-        }
-    }
 
     cons.write_byte(b'A');
 }
