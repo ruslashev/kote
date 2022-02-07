@@ -4,7 +4,7 @@
 
 use crate::multiboot::BootloaderInfo;
 
-struct TextBuffer {
+struct Console {
     addr: usize,
     width: u32,
     height: u32,
@@ -12,9 +12,9 @@ struct TextBuffer {
     bytes_per_pixel: u8,
 }
 
-impl TextBuffer {
+impl Console {
     const fn uninit() -> Self {
-        TextBuffer {
+        Console {
             addr: 0,
             width: 0,
             height: 0,
@@ -26,7 +26,7 @@ impl TextBuffer {
     fn from_info(info: &BootloaderInfo) -> Self {
         let fb = &info.framebuffer;
 
-        TextBuffer {
+        Console {
             addr: usize::try_from(fb.addr).unwrap(),
             width: fb.width,
             height: fb.height,
@@ -45,11 +45,11 @@ impl TextBuffer {
     }
 }
 
-static mut BUFFER: TextBuffer = TextBuffer::uninit();
+static mut CONSOLE: Console = Console::uninit();
 
 pub fn init(info: &BootloaderInfo) {
     unsafe {
-        BUFFER = TextBuffer::from_info(info);
+        CONSOLE = Console::from_info(info);
 
         let mut sx;
         let sz = 50;
@@ -57,22 +57,22 @@ pub fn init(info: &BootloaderInfo) {
         for y in 0..sz {
             sx = sz * 0;
             for x in 0..sz {
-                BUFFER.putpixel(sx + x, y, u32::max_value());
+                CONSOLE.putpixel(sx + x, y, u32::max_value());
             }
 
             sx = sz * 1;
             for x in 0..sz {
-                BUFFER.putpixel(sx + x, y, 0xff0000);
+                CONSOLE.putpixel(sx + x, y, 0xff0000);
             }
 
             sx = sz * 2;
             for x in 0..sz {
-                BUFFER.putpixel(sx + x, y, 0x00ff00);
+                CONSOLE.putpixel(sx + x, y, 0x00ff00);
             }
 
             sx = sz * 3;
             for x in 0..sz {
-                BUFFER.putpixel(sx + x, y, 0x0000ff);
+                CONSOLE.putpixel(sx + x, y, 0x0000ff);
             }
         }
     }
