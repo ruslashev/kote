@@ -3,10 +3,14 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use core::lazy::OnceCell;
+
 use crate::multiboot::BootloaderInfo;
+use crate::panic::panic_early;
 use crate::spinlock::SpinlockMutex;
 
 static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
+
+const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
 
 #[derive(Debug)]
 struct Console {
@@ -15,6 +19,7 @@ struct Console {
     height: u32,
     pitch: u32,
     bytes_per_pixel: u8,
+    font: Font,
 }
 
 impl Console {
@@ -27,6 +32,7 @@ impl Console {
             height: fb.height,
             pitch: fb.pitch,
             bytes_per_pixel: fb.bpp / 8,
+            font: Font::from_bytes(FONT),
         }
     }
 
@@ -36,6 +42,36 @@ impl Console {
 
         unsafe {
             ptr.write(color);
+        }
+    }
+
+    fn write_byte(&self, b: u8) {
+        let offset = self.font.height * b as usize;
+        let glyph = &self.font.glyphs[offset..offset + self.font.height];
+
+        for byte in glyph {
+            println!("{:08b}", byte);
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Font {
+    width: usize,
+    height: usize,
+    glyphs: &'static [u8],
+}
+
+impl Font {
+    fn from_bytes(bytes: &'static [u8]) -> Self {
+        if bytes[0..=1] != [0x36, 0x04] {
+            panic_early("Font magic mismatch");
+        }
+
+        Font {
+            width: 8,
+            height: bytes[3] as usize,
+            glyphs: &bytes[4..],
         }
     }
 }
@@ -71,4 +107,6 @@ pub fn init(info: &BootloaderInfo) {
             cons.putpixel(sx + x, y, 0x0000ff);
         }
     }
+
+    cons.write_byte(b'A');
 }
