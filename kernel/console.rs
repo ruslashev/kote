@@ -35,27 +35,6 @@ impl Console {
 }
 
 #[derive(Debug)]
-struct Font {
-    width: u32,
-    height: usize,
-    glyphs: &'static [u8],
-}
-
-impl Font {
-    fn from_bytes(bytes: &'static [u8]) -> Self {
-        if bytes[0..=1] != [0x36, 0x04] {
-            panic_early("Font magic mismatch");
-        }
-
-        Font {
-            width: 8,
-            height: bytes[3] as usize,
-            glyphs: &bytes[4..],
-        }
-    }
-}
-
-#[derive(Debug)]
 struct Framebuffer {
     addr: usize,
     width: u32,
@@ -106,6 +85,27 @@ impl Framebuffer {
             }
 
             y += 1;
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Font {
+    width: u32,
+    height: usize,
+    glyphs: &'static [u8],
+}
+
+impl Font {
+    fn from_bytes(bytes: &'static [u8]) -> Self {
+        if bytes[0..=1] != [0x36, 0x04] {
+            panic_early("Font magic mismatch");
+        }
+
+        Font {
+            width: 8,
+            height: bytes[3] as usize,
+            glyphs: &bytes[4..],
         }
     }
 }
