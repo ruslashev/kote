@@ -19,6 +19,8 @@ const COLOR_FG: u32 = 0xe5e5e5;
 struct Console {
     fb: Framebuffer,
     font: Font,
+    cursor_x: u32,
+    cursor_y: u32,
 }
 
 impl Console {
@@ -26,11 +28,24 @@ impl Console {
         Console {
             fb: Framebuffer::from_info(info),
             font: Font::from_bytes(FONT),
+            cursor_x: 0,
+            cursor_y: 0,
         }
     }
 
-    fn write_byte(&self, b: u8) {
-        self.fb.draw_char(b, &self.font);
+    fn write_byte(&mut self, b: u8) {
+        let x = self.cursor_x * self.font.width;
+        let y = self.cursor_y * self.font.height as u32;
+
+        self.fb.draw_char(b, &self.font, x, y);
+
+        self.cursor_x += 1;
+    }
+
+    fn write_str(&mut self, s: &str) {
+        for b in s.bytes() {
+            self.write_byte(b);
+        }
     }
 }
 
@@ -65,18 +80,13 @@ impl Framebuffer {
         }
     }
 
-    fn draw_char(&self, b: u8, font: &Font) {
+    fn draw_char(&self, b: u8, font: &Font, x: u32, y: u32) {
         let offset = font.height * b as usize;
         let glyph = &font.glyphs[offset..offset + font.height];
-
-        let sx: u32 = 0;
-        let sy: u32 = 0;
-
-        let mut y = sy;
-        let x = sx;
+        let mut dy = y;
 
         for byte in glyph {
-            let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
+            let pos = dy * self.pitch + x * self.bytes_per_pixel as u32;
             let ptr = (self.addr + pos as usize) as *mut [u32; 8];
             let row = &FB_LUT[*byte as usize];
 
@@ -84,7 +94,7 @@ impl Framebuffer {
                 ptr.write(*row);
             }
 
-            y += 1;
+            dy += 1;
         }
     }
 }
@@ -111,13 +121,13 @@ impl Font {
 }
 
 pub fn init(info: &BootloaderInfo) {
-    let cell = CONSOLE.guard();
+    let mut cell = CONSOLE.guard();
 
     cell.set(Console::from_info(info)).unwrap();
 
-    let cons = cell.get().unwrap();
+    let cons = cell.get_mut().unwrap();
 
-    cons.write_byte(b'A');
+    cons.write_str("Hello, world!");
 }
 
 const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {
@@ -126,16 +136,16 @@ const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {
     let mut byte = 0;
 
     while byte < num_combinations {
-        let mut mask_idx = 7;
+        let mut mask_idx = 0;
 
-        while mask_idx > 0 {
+        while mask_idx < 8 {
             let mask = 1 << mask_idx;
             let bit = byte & mask;
             let set = bit != 0;
 
-            lut[byte][mask_idx] = if set { COLOR_FG } else { COLOR_BG };
+            lut[byte][7 - mask_idx] = if set { COLOR_FG } else { COLOR_BG };
 
-            mask_idx -= 1;
+            mask_idx += 1;
         }
 
         byte += 1;
