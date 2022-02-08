@@ -11,6 +11,9 @@ use crate::spinlock::SpinlockMutex;
 static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
 
 const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
+const FB_LUT: [[u32; 8]; 2usize.pow(8)] = compute_fb_lut();
+const COLOR_BG: u32 = 0x000000;
+const COLOR_FG: u32 = 0xe5e5e5;
 
 #[derive(Debug)]
 struct Console {
@@ -91,21 +94,15 @@ impl Framebuffer {
         let sy: u32 = 0;
 
         let mut y = sy;
-        let mut x;
+        let x = sx;
 
         for byte in glyph {
-            let mut copy = *byte;
-            x = sx + font.width;
+            let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
+            let ptr = (self.addr + pos as usize) as *mut [u32; 8];
+            let row = &FB_LUT[*byte as usize];
 
-            for _ in 0..8 {
-                let bit = copy & 1;
-
-                if bit == 1 {
-                    self.draw_pixel(x, y, 0xffffff);
-                }
-
-                x -= 1;
-                copy >>= 1;
+            unsafe {
+                ptr.write(*row);
             }
 
             y += 1;
@@ -121,4 +118,28 @@ pub fn init(info: &BootloaderInfo) {
     let cons = cell.get().unwrap();
 
     cons.write_byte(b'A');
+}
+
+const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {
+    let mut lut = [[0; 8]; 2usize.pow(8)];
+    let num_combinations = 2usize.pow(8);
+    let mut byte = 0;
+
+    while byte < num_combinations {
+        let mut mask_idx = 7;
+
+        while mask_idx > 0 {
+            let mask = 1 << mask_idx;
+            let bit = byte & mask;
+            let set = bit != 0;
+
+            lut[byte][mask_idx] = if set { COLOR_FG } else { COLOR_BG };
+
+            mask_idx -= 1;
+        }
+
+        byte += 1;
+    }
+
+    lut
 }
