@@ -21,19 +21,36 @@ struct Console {
     font: Font,
     cursor_x: u32,
     cursor_y: u32,
+    width: u32,
+    height: u32,
 }
 
 impl Console {
     fn from_info(info: &BootloaderInfo) -> Self {
+        let font = Font::from_bytes(FONT);
+        let width = 1024 / font.width;
+        let height = 768 / font.height as u32;
+
         Console {
             fb: Framebuffer::from_info(info),
-            font: Font::from_bytes(FONT),
+            font,
             cursor_x: 0,
             cursor_y: 0,
+            width,
+            height,
         }
     }
 
     fn write_byte(&mut self, b: u8) {
+        if b == b'\n' {
+            self.newline();
+            return;
+        }
+
+        if self.cursor_x == self.width - 1 {
+            self.newline();
+        }
+
         let x = self.cursor_x * self.font.width;
         let y = self.cursor_y * self.font.height as u32;
 
@@ -45,6 +62,28 @@ impl Console {
     fn write_str(&mut self, s: &str) {
         for b in s.bytes() {
             self.write_byte(b);
+        }
+    }
+
+    fn newline(&mut self) {
+        self.cursor_x = 0;
+        self.cursor_y += 1;
+
+        if self.cursor_y >= self.height {
+            self.cursor_y -= 1;
+            self.shift_up();
+        }
+    }
+
+    fn shift_up(&mut self) {
+        let bpp = self.fb.bytes_per_pixel as usize;
+        let width = (self.width * self.font.width) as usize * bpp;
+        let src = (self.fb.addr + width * self.font.height) as *const u8;
+        let dst = self.fb.addr as *mut u8;
+        let cnt = width * (self.fb.height as usize - self.font.height) * bpp;
+
+        unsafe {
+            core::ptr::copy(src, dst, cnt);
         }
     }
 }
@@ -128,6 +167,20 @@ pub fn init(info: &BootloaderInfo) {
     let cons = cell.get_mut().unwrap();
 
     cons.write_str("Hello, world!");
+
+    let mut rand: u32 = 1;
+    loop {
+        cons.write_byte((rand & 255) as u8);
+
+        loop {
+            rand ^= rand << 13;
+            rand ^= rand >> 17;
+            rand ^= rand << 5;
+            if (rand & 255) as u8 != b'\n' {
+                break;
+            }
+        }
+    }
 }
 
 const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {
