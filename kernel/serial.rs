@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::arch::io::{inb, outb};
-use crate::panic::panic_early;
+use crate::panic::panic_no_serial;
 use crate::spinlock::SpinlockMutex;
 
 const COM1_PORT: u16 = 0x3f8;
@@ -80,14 +80,14 @@ pub fn init() {
     outb(COM1_PORT + COM_THR, 0x80);
 
     if inb(COM1_PORT + COM_RBR) != 0x80 {
-        panic_early("Failed to init serial: didn't return the same byte as sent");
+        panic_no_serial("Failed to init serial: didn't return the same byte as sent");
     }
 
     // Disable loopback, enable aux bits 1, 2
     outb(COM1_PORT + COM_MCR, 0b00001111);
 
     if inb(COM1_PORT + COM_LSR) == 0xff {
-        panic_early("Failed to init serial: LSR returned 0xFF");
+        panic_no_serial("Failed to init serial: LSR returned 0xFF");
     }
 
     // Enable receiver interrupts

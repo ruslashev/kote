@@ -5,10 +5,10 @@
 use core::lazy::OnceCell;
 
 use crate::multiboot::BootloaderInfo;
-use crate::panic::panic_early;
+use crate::panic::panic_no_graphics;
 use crate::spinlock::SpinlockMutex;
 
-static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
+pub static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
 
 const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
 const FB_LUT: [[u32; 8]; 2usize.pow(8)] = compute_fb_lut();
@@ -16,7 +16,7 @@ const COLOR_BG: u32 = 0x000000;
 const COLOR_FG: u32 = 0xe5e5e5;
 
 #[derive(Debug)]
-struct Console {
+pub struct Console {
     fb: Framebuffer,
     font: Font,
     cursor_x: u32,
@@ -88,6 +88,15 @@ impl Console {
     }
 }
 
+impl core::fmt::Write for Console {
+    // NOTE: Same as `Serial`, by itself makes no exclusivity guarantees
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.write_str(s);
+
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 struct Framebuffer {
     addr: usize,
@@ -148,7 +157,7 @@ struct Font {
 impl Font {
     fn from_bytes(bytes: &'static [u8]) -> Self {
         if bytes[0..=1] != [0x36, 0x04] {
-            panic_early("Font magic mismatch");
+            panic_no_graphics("Font magic mismatch");
         }
 
         Font {
@@ -160,27 +169,8 @@ impl Font {
 }
 
 pub fn init(info: &BootloaderInfo) {
-    let mut cell = CONSOLE.guard();
-
+    let cell = CONSOLE.guard();
     cell.set(Console::from_info(info)).unwrap();
-
-    let cons = cell.get_mut().unwrap();
-
-    cons.write_str("Hello, world!");
-
-    let mut rand: u32 = 1;
-    loop {
-        cons.write_byte((rand & 255) as u8);
-
-        loop {
-            rand ^= rand << 13;
-            rand ^= rand >> 17;
-            rand ^= rand << 5;
-            if (rand & 255) as u8 != b'\n' {
-                break;
-            }
-        }
-    }
 }
 
 const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {

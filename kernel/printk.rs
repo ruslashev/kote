@@ -7,10 +7,14 @@ macro_rules! println {
     ($($arg:tt)*) => ({
         use core::fmt::Write;
         use $crate::serial::SERIAL_LOCK;
+        use $crate::console::CONSOLE;
 
-        let mut data = SERIAL_LOCK.guard();
+        let mut serial = SERIAL_LOCK.guard();
+        let mut cons_cell = CONSOLE.guard();
+        let console = cons_cell.get_mut().unwrap();
 
-        write!(&mut data, "{}\n", format_args!($($arg)*)).unwrap();
+        writeln!(&mut serial, "{}", format_args!($($arg)*)).unwrap();
+        writeln!(console, "{}", format_args!($($arg)*)).unwrap();
     });
 }
 

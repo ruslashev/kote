@@ -2,10 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::fmt::Write;
 use core::panic::PanicInfo;
-use core::ptr::write_volatile;
 
-use crate::consts::KERNEL_BASE;
+use crate::serial::SERIAL_LOCK;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -14,16 +14,14 @@ fn panic(info: &PanicInfo) -> ! {
     loop {}
 }
 
-/// For early boot stage when we don't have serial or graphics.
-pub fn panic_early(message: &str) {
-    let vga = (KERNEL_BASE + 0xb8000) as *mut u16;
-    let color: u16 = 0x07; // black BG, light gray FG
+/// Panicking at the earliest boot stage when there's no serial and graphics. Don't really know
+/// what to do here, since we can't communicate the error.
+pub fn panic_no_serial(_message: &str) {
+    // Don't abort here and continue, pretending serial is not broken
+}
 
-    for (i, b) in message.bytes().enumerate() {
-        unsafe {
-            write_volatile(vga.add(i), (color << 8) | (b as u16));
-        }
-    }
-
-    loop {}
+/// Panic at early boot stage when there's serial but no graphics. Print to serial.
+pub fn panic_no_graphics(message: &str) {
+    let mut serial = SERIAL_LOCK.guard();
+    writeln!(&mut serial, "{}", message).unwrap();
 }

@@ -7,7 +7,7 @@
 
 use core::mem::size_of;
 
-use crate::panic::panic_early;
+use crate::panic::panic_no_graphics;
 use crate::utils;
 
 extern "C" {
@@ -66,7 +66,7 @@ pub fn init() -> BootloaderInfo {
     let alignment = 8;
 
     if !utils::is_po2_aligned(start, alignment) {
-        panic_early("Multiboot information structure is not aligned");
+        panic_no_graphics("Multiboot information structure is not aligned");
     }
 
     let mut total_size = unsafe { (start as *const u32).read() } as u64;
@@ -157,7 +157,7 @@ fn parse_mem_map(header: *const u32) {
     let entry_version = unsafe { header.offset(3).read() };
 
     if entry_version != 0 {
-        panic_early("Multiboot memory map version has unexpected non-zero value");
+        panic_no_graphics("Multiboot memory map version has unexpected non-zero value");
     }
 
     let mut entries = unsafe { header.offset(4).cast::<Entry>() };
@@ -165,11 +165,9 @@ fn parse_mem_map(header: *const u32) {
 
     while total_size < tag_size {
         let entry = unsafe { entries.read() };
-        let base_addr = entry.base_addr;
-        let length = entry.length;
-        let etype = entry.etype;
-
-        println!("addr={:<12x} len={:<12} type={}", base_addr, length, etype);
+        let _base_addr = entry.base_addr;
+        let _length = entry.length;
+        let _etype = entry.etype;
 
         unsafe {
             entries = entries.add(1);
@@ -235,8 +233,6 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
     }
 
     let fb = unsafe { header.cast::<FrameBufferTag>().read() };
-
-    println!("fb = {:#?}", fb);
 
     info.framebuffer = FramebufferInfo {
         addr: fb.addr,
