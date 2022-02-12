@@ -9,12 +9,19 @@ macro_rules! println {
         use $crate::serial::SERIAL_LOCK;
         use $crate::console::CONSOLE;
 
-        let mut serial = SERIAL_LOCK.guard();
-        let mut cons_cell = CONSOLE.guard();
-        let console = cons_cell.get_mut().unwrap();
+        // 1. Lock after constructing parameters to avoid a deadlock on interrupt,
+        // 2. Match is used here because we can't create a `let args = format_args!($($arg)*)`
+        //    binding, see https://stackoverflow.com/a/48732525/1063961
+        match format_args!($($arg)*) {
+            args => {
+                let mut serial = SERIAL_LOCK.guard();
+                let mut cons_cell = CONSOLE.guard();
+                let console = cons_cell.get_mut().unwrap();
 
-        writeln!(&mut serial, "{}", format_args!($($arg)*)).unwrap();
-        writeln!(console, "{}", format_args!($($arg)*)).unwrap();
+                writeln!(&mut serial, "{}", &args).unwrap();
+                writeln!(console, "{}", args).unwrap();
+            }
+        }
     });
 }
 
@@ -25,8 +32,8 @@ macro_rules! dbg {
         $crate::println!("[{}:{}]", file!(), line!())
     };
     ($val:expr $(,)?) => {
-        // Use of `match` here is intentional because it affects the lifetimes
-        // of temporaries - https://stackoverflow.com/a/48732525/1063961
+        // Same as in println!() above, use of `match` here is intentional because it affects the
+        // lifetimes of temporaries.
         match $val {
             tmp => {
                 $crate::println!("[{}:{}] {} = {:#?}", file!(), line!(), stringify!($val), &tmp);
