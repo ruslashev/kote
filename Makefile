@@ -29,7 +29,7 @@ LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
 
 ISO = grub-mkrescue
 IFLAGS = -follow-links -no-pad
-GRUB_CFG = grub.cfg
+GRUB_CFG = cfg/grub.cfg
 
 QEMU = qemu-system-x86_64
 QFLAGS = -m 1G -serial stdio
