@@ -7,6 +7,9 @@ toolchain
 
 *.txt
 *.html
+*.log
 
 *.lock
+
+bx_enh_dbg.ini
 
