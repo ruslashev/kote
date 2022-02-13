@@ -27,10 +27,6 @@ LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
          -z max-page-size=0x1000 \
          --gc-sections
 
-OBJD = $(TOOLCHAIN)objdump
-OFLAGS = --disassemble --demangle --no-show-raw-insn --wide -M intel
-# OFLAGS_FULL = $(OFLAGS) --source
-
 ISO = grub-mkrescue
 IFLAGS = -follow-links -no-pad
 GRUB_CFG = grub.cfg
@@ -46,9 +42,6 @@ OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso
 
-DISASOBJS = $(notdir $(OBJS) $(KERNBIN))
-DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
-
 ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
 
 all: qemu
@@ -56,8 +49,6 @@ all: qemu
 qemu: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
 	@$(QEMU) $(QFLAGS) -cdrom $<
-
-disassembly: $(DISAS)
 
 clippy:
 	@$(call ECHO, cargo)
@@ -84,14 +75,6 @@ $(RKERNLIB): $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS)
 
-$(DISASDIR)/%.txt: $(OBJDIR)/% $(DISASDIR)
-	@$(call ECHO, objd)
-	@$(OBJD) $(OFLAGS) $< > $@
-
-$(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
-	@$(call ECHO, objd)
-	@$(OBJD) $(OFLAGS) $< > $@
-
 $(OBJDIR) $(RUSTDIR) $(DISASDIR):
 	@mkdir -p $@
 
@@ -102,8 +85,9 @@ clean:
 	@$(call ECHO)
 	@rm -rf $(BUILDDIR) $(KERNBIN) $(KERNISO)
 
+-include debug.mk
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
 
-.PHONY: all qemu disassembly clippy clean
+.PHONY: all qemu clippy clean
 .DELETE_ON_ERROR:
