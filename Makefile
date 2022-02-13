@@ -46,8 +46,8 @@ OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso
 
-DISASBIN = $(notdir $(OBJS) $(KERNBIN))
-DISAS = $(DISASBIN:%=$(DISASDIR)/%.txt)
+DISASOBJS = $(notdir $(OBJS) $(KERNBIN))
+DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
 
 ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
 
@@ -57,7 +57,7 @@ qemu: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
 	@$(QEMU) $(QFLAGS) -cdrom $<
 
-debug: $(DISAS)
+disassembly: $(DISAS)
 
 clippy:
 	@$(call ECHO, cargo)
@@ -105,5 +105,5 @@ clean:
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
 
-.PHONY: all qemu debug clippy clean
+.PHONY: all qemu disassembly clippy clean
 .DELETE_ON_ERROR:
