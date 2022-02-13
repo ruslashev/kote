@@ -23,14 +23,21 @@ mod spinlock;
 mod utils;
 
 #[no_mangle]
-pub fn kmain() -> ! {
+pub extern "C" fn kmain() {
     serial::init();
     let info = multiboot::parse();
     console::init(&info);
+    arch::interrupts::init();
+    arch::interrupts::enable();
 
     println!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
 
     println!("lole");
 
-    loop {}
+    use core::arch::asm;
+    unsafe {
+        asm!("mov eax, 1", "mov ecx, 0", "div ecx");
+    }
+
+    println!("continue");
 }

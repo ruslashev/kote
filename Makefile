@@ -37,7 +37,7 @@ QFLAGS = -m 1G -serial stdio
 RKERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 KERNLIB = $(BUILDDIR)/libkernel.a
 
-ASRC = start.s
+ASRC = start.s interrupts.s
 OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso

@@ -8,7 +8,7 @@ global mb_info
 extern kmain
 
 %define KERNEL_BASE 0xffffffff80000000
-%define KERNEL_STACK_SZ 4096 * 2
+%define KERNEL_STACK_SZ 4096 * 4
 
 %define RELOC(x) (x - KERNEL_BASE)
 
