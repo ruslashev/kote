@@ -25,7 +25,7 @@ mod utils;
 #[no_mangle]
 pub fn kmain() -> ! {
     serial::init();
-    let info = multiboot::init();
+    let info = multiboot::parse();
     console::init(&info);
 
     println!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);

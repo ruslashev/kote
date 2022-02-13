@@ -34,7 +34,8 @@ pub struct FramebufferInfo {
     pub blue_mask_sz: u8,
 }
 
-pub fn init() -> BootloaderInfo {
+/// Parse multiboot information structure located address `mb_info`, stored during boot in start.s.
+pub fn parse() -> BootloaderInfo {
     /* Boot information consists of fixed part and a series of tags.
      * Its start is 8-bytes aligned. Fixed part is as following:
      *
