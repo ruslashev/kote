@@ -28,7 +28,8 @@ LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
          --gc-sections
 
 OBJD = $(TOOLCHAIN)objdump
-OFLAGS = -D -S -M intel --visualize-jumps --no-show-raw-insn -w
+OFLAGS = --disassemble --demangle --no-show-raw-insn --wide -M intel
+# OFLAGS_FULL = $(OFLAGS) --source
 
 ISO = grub-mkrescue
 IFLAGS = -follow-links -no-pad
