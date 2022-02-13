@@ -41,6 +41,12 @@ impl Console {
         }
     }
 
+    fn write_str(&mut self, s: &str) {
+        for b in s.bytes() {
+            self.write_byte(b);
+        }
+    }
+
     fn write_byte(&mut self, b: u8) {
         if b == b'\n' {
             self.newline();
@@ -57,12 +63,6 @@ impl Console {
         self.fb.draw_char(b, &self.font, x, y);
 
         self.cursor_x += 1;
-    }
-
-    fn write_str(&mut self, s: &str) {
-        for b in s.bytes() {
-            self.write_byte(b);
-        }
     }
 
     fn newline(&mut self) {
