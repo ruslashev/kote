@@ -8,6 +8,11 @@ OFLAGS_FULL = $(OFLAGS) --source
 
 BOCHS = bochs -f cfg/bochs.cfg -q
 
+GDB_PORT = 1234
+QFLAGS_GDB = $(QFLAGS) -S -gdb tcp::$(GDB_PORT)
+GDB = gdb-multiarch
+GDB_OPTS = -ex 'target remote :$(GDB_PORT)'
+
 DISASOBJS = $(notdir $(OBJS) $(KERNBIN))
 DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
 
@@ -17,6 +22,12 @@ bochs: $(KERNISO)
 	@$(call ECHO, bochs, $(<F))
 	@$(BOCHS)
 
+gdb: $(KERNISO)
+	@$(call ECHO, qemu, $(<F))
+	@$(QEMU) $(QFLAGS_GDB) -cdrom $< &
+	@$(call ECHO, gdb, $(KERNBIN))
+	@$(GDB) $(GDB_OPTS) $(KERNBIN)
+
 $(DISASDIR)/%.txt: $(OBJDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
@@ -25,4 +36,4 @@ $(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
-.PHONY: disassembly bochs
+.PHONY: disassembly bochs gdb
