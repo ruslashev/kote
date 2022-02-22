@@ -15,6 +15,41 @@ static mut IDT: [IDTEntry; 256] = [IDTEntry {
     reserved: 0,
 }; 256];
 
+static EXCEPTION_HANDLERS: [Exception; 32] = [
+    Exception::with_hdl("Divide-by-zero Error", divide_by_zero), // 0
+    Exception::stub_hdl("Debug"),                                // 1
+    Exception::stub_hdl("Non-maskable Interrupt"),               // 2
+    Exception::stub_hdl("Breakpoint"),                           // 3
+    Exception::stub_hdl("Overflow"),                             // 4
+    Exception::stub_hdl("Bound Range Exceeded"),                 // 5
+    Exception::stub_hdl("Invalid Opcode"),                       // 6
+    Exception::stub_hdl("Device Not Available"),                 // 7
+    Exception::stub_hdl("Double Fault"),                         // 8
+    Exception::stub_hdl("Coprocessor Segment Overrun"),          // 9
+    Exception::stub_hdl("Invalid TSS"),                          // 10
+    Exception::stub_hdl("Segment Not Present"),                  // 11
+    Exception::stub_hdl("Stack-Segment Fault"),                  // 12
+    Exception::stub_hdl("General Protection Fault"),             // 13
+    Exception::stub_hdl("Page Fault"),                           // 14
+    Exception::reserved(),                                       // 15
+    Exception::stub_hdl("x87 Floating-Point Exception"),         // 16
+    Exception::stub_hdl("Alignment Check"),                      // 17
+    Exception::stub_hdl("Machine Check"),                        // 18
+    Exception::stub_hdl("SIMD Floating-Point Exception"),        // 19
+    Exception::stub_hdl("Virtualization Exception"),             // 20
+    Exception::stub_hdl("Control Protection Exception"),         // 21
+    Exception::reserved(),                                       // 22
+    Exception::reserved(),                                       // 23
+    Exception::reserved(),                                       // 24
+    Exception::reserved(),                                       // 25
+    Exception::reserved(),                                       // 26
+    Exception::reserved(),                                       // 27
+    Exception::stub_hdl("Hypervisor Injection Exception"),       // 28
+    Exception::stub_hdl("VMM Communication Exception"),          // 29
+    Exception::stub_hdl("Security Exception"),                   // 30
+    Exception::reserved(),                                       // 31
+];
+
 const PIC_IRQ_OFFSET: u8 = 32;
 const PIC1: u16 = 0x20;
 const PIC2: u16 = 0xa0;
@@ -28,6 +63,34 @@ struct IDTEntry {
     handler_addr_mid: u16,
     handler_addr_top: u32,
     reserved: u32,
+}
+
+struct Exception {
+    name: &'static str,
+    handler: Option<fn()>,
+}
+
+impl Exception {
+    const fn with_hdl(name: &'static str, handler: fn()) -> Self {
+        Exception {
+            name,
+            handler: Some(handler),
+        }
+    }
+
+    const fn stub_hdl(name: &'static str) -> Self {
+        Exception {
+            name,
+            handler: None,
+        }
+    }
+
+    const fn reserved() -> Self {
+        Exception {
+            name: "Reserved",
+            handler: None,
+        }
+    }
 }
 
 #[inline(always)]
@@ -313,8 +376,13 @@ pub extern "C" fn exception_dispatch(rsp: u64) {
 
     let frame = rsp as *const ExceptionFrame;
     let vec = unsafe { (*frame).exc_vector };
+    let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
 
-    println!("Exception {} occured", vec);
+    println!("Exception {} occured: {}", vec, exc_handler.name);
+
+    if let Some(handler) = exc_handler.handler {
+        handler.call(());
+    }
 
     loop {}
 }
@@ -324,4 +392,8 @@ pub extern "C" fn irq_dispatch(vec: u8) {
     println!("In IRQ {} handler", vec);
 
     irq_eoi(vec);
+}
+
+fn divide_by_zero() {
+    println!("Divide by zero handler");
 }

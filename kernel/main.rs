@@ -5,6 +5,9 @@
 #![no_std]
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
+#![allow(clippy::identity_op)]
+#![feature(const_fn_fn_ptr_basics)]
+#![feature(fn_traits)]
 #![feature(once_cell)]
 
 #[macro_use]
