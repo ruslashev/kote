@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::arch::io;
+use crate::arch::asm::io;
 
 const PIC_IRQ_OFFSET: u8 = 32;
 const PIC1: u16 = 0x20;
@@ -36,7 +36,7 @@ pub fn remap() {
 #[inline(always)]
 fn outb_wait(port: u16, val: u8) {
     io::outb(port, val);
-    io::io_wait();
+    io::wait();
 }
 
 pub fn enable_line(irq: u8) {
