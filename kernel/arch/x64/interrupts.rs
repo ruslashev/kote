@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use core::arch::asm;
+use core::fmt;
 
 use super::io;
 
@@ -90,6 +91,61 @@ impl Exception {
             name: "Reserved",
             handler: None,
         }
+    }
+}
+
+#[repr(C, packed)]
+struct ExceptionFrame {
+    r15: u64,
+    r14: u64,
+    r13: u64,
+    r12: u64,
+    r11: u64,
+    r10: u64,
+    r9: u64,
+    r8: u64,
+    rbp: u64,
+    rdi: u64,
+    rsi: u64,
+    rdx: u64,
+    rcx: u64,
+    rbx: u64,
+    rax: u64,
+    error_code: u32,
+    exc_vector: u32,
+    return_rip: u64,
+    return_cs: u64,
+    rflags: u64,
+    return_rsp: u64,
+    return_ss: u64,
+}
+
+impl fmt::Display for ExceptionFrame {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Copies to avoid references to packed fields
+        let rip = self.return_rip;
+        let rdi = self.rdi;
+        let rsi = self.rsi;
+        let rdx = self.rdx;
+        let rcx = self.rcx;
+        let r8 = self.r8;
+        let r9 = self.r9;
+        let rsp = self.return_rsp;
+
+        writeln!(f, "RIP {:#x}", rip)?;
+        writeln!(f, "RDI {:#x}", rdi)?;
+        writeln!(f, "RSI {:#x}", rsi)?;
+        writeln!(f, "RDX {:#x}", rdx)?;
+        writeln!(f, "RCX {:#x}", rcx)?;
+        writeln!(f, "R8  {:#x}", r8 )?;
+        writeln!(f, "R9  {:#x}", r9 )?;
+        writeln!(f, "RSP {:#x}", rsp)?;
+
+        let flags = self.rflags;
+
+        write!(f, "Flags {:#b}", flags);
+
+        Ok(())
     }
 }
 
@@ -348,37 +404,13 @@ pub extern "C" fn exception_dispatch(rsp: u64) {
      * └────────────────────────────────┘
      */
 
-    #[repr(C, packed)]
-    struct ExceptionFrame {
-        r15: u64,
-        r14: u64,
-        r13: u64,
-        r12: u64,
-        r11: u64,
-        r10: u64,
-        r9: u64,
-        r8: u64,
-        rbp: u64,
-        rdi: u64,
-        rsi: u64,
-        rdx: u64,
-        rcx: u64,
-        rbx: u64,
-        rax: u64,
-        error_code: u32,
-        exc_vector: u32,
-        return_rip: u64,
-        return_cs: u64,
-        rflags: u64,
-        return_rsp: u64,
-        return_ss: u64,
-    }
-
-    let frame = rsp as *const ExceptionFrame;
-    let vec = unsafe { (*frame).exc_vector };
+    let frame_ptr = rsp as *const ExceptionFrame;
+    let frame = unsafe { &*frame_ptr };
+    let vec = frame.exc_vector;
     let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
 
     println!("Exception {} occured: {}", vec, exc_handler.name);
+    println!("{}", frame);
 
     if let Some(handler) = exc_handler.handler {
         handler.call(());
