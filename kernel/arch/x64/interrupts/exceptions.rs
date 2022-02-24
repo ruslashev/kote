@@ -154,6 +154,7 @@ impl fmt::Display for ExceptionFrame {
         let r8 = self.r8;
         let r9 = self.r9;
         let rsp = self.return_rsp;
+        let rbp = self.rbp;
 
         writeln!(f, "RIP {:#x}", rip)?;
         writeln!(f, "RDI {:#x}", rdi)?;
@@ -163,10 +164,27 @@ impl fmt::Display for ExceptionFrame {
         writeln!(f, "R8  {:#x}", r8)?;
         writeln!(f, "R9  {:#x}", r9)?;
         writeln!(f, "RSP {:#x}", rsp)?;
+        writeln!(f, "RBP {:#x}", rbp)?;
 
         let flags = self.rflags;
 
-        write!(f, "Flags {:#b}", flags)?;
+        writeln!(f, "Flags {:#b}", flags)?;
+
+        writeln!(f, "Backtrace:")?;
+        writeln!(f, " 1) {:#x}", rip)?;
+
+        let mut rbp = rbp;
+        let mut counter = 2;
+
+        while rbp != 0 {
+            let saved_rip = rbp + 8;
+            let retaddr = unsafe { *(saved_rip as *const u64) };
+
+            writeln!(f, "{:>2}) {:#x}", counter, retaddr)?;
+
+            rbp = unsafe { *(rbp as *const u64) };
+            counter += 1;
+        }
 
         Ok(())
     }

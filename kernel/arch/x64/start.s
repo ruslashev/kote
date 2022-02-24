@@ -59,7 +59,7 @@ start:
 	cli
 
 	; Set up stack
-	mov esp, RELOC(init_stack)
+	mov esp, RELOC(stack_botmost)
 
 	; Save multiboot info
 	mov [RELOC(mb_info)], ebx
@@ -219,7 +219,8 @@ start64:
 	mov ss, ax
 
 	; Set up stack
-	mov rsp, init_stack
+	mov rsp, stack_botmost
+	mov rbp, 0
 
 	; Call rust code
 	call kmain
@@ -258,7 +259,7 @@ pd:
 	resb 4096
 pd_fb:
 	resb 4096
-init_stack_bottom:
+stack_topmost:
 	resb KERNEL_STACK_SZ
-init_stack:
+stack_botmost:
 

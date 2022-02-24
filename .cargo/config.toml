@@ -11,3 +11,6 @@ build-std = ["core", "compiler_builtins"]
 
 [term]
 progress.when = 'never'
+
+[target.'cfg(debug_assertions)']
+rustflags = ["-C", "force-frame-pointers=y"]

@@ -37,10 +37,24 @@ pub extern "C" fn kmain() {
 
     println!("lole");
 
+    call1();
+
+    println!("continue");
+}
+
+fn call1() {
+    call2();
+}
+
+fn call2() {
+    let big = [16; 123];
+
+    call3();
+}
+
+fn call3() {
     use core::arch::asm;
     unsafe {
         asm!("mov eax, 1", "mov ecx, 0", "div ecx");
     }
-
-    println!("continue");
 }
