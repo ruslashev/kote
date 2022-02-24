@@ -5,6 +5,7 @@
 use core::fmt;
 
 use super::handlers;
+use crate::arch::backtrace::Backtrace;
 
 static EXCEPTION_HANDLERS: [Exception; 32] = [
     Exception::with_hdl("Divide-by-zero Error", handlers::divide_by_zero), // 0
@@ -173,16 +174,9 @@ impl fmt::Display for ExceptionFrame {
         writeln!(f, "Backtrace:")?;
         writeln!(f, " 1) {:#x}", rip)?;
 
-        let mut rbp = rbp;
         let mut counter = 2;
-
-        while rbp != 0 {
-            let saved_rip = rbp + 8;
-            let retaddr = unsafe { *(saved_rip as *const u64) };
-
-            writeln!(f, "{:>2}) {:#x}", counter, retaddr)?;
-
-            rbp = unsafe { *(rbp as *const u64) };
+        for addr in Backtrace::from_rbp(rbp) {
+            writeln!(f, "{:>2}) {:#x}", counter, addr)?;
             counter += 1;
         }
 
