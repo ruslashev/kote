@@ -21,19 +21,19 @@ SECTIONS {
 	. += KERNEL_BASE;
 
 	.text ALIGN (0x1000) : AT (ADDR(.text) - KERNEL_BASE) {
-		* (.text)
+		* (.text*)
 	}
 
 	.data ALIGN (0x1000) : AT (ADDR(.data) - KERNEL_BASE) {
-		* (.data)
+		* (.data*)
 	}
 
 	.rodata ALIGN (0x1000) : AT (ADDR(.rodata) - KERNEL_BASE) {
-		* (.rodata)
+		* (.rodata*)
 	}
 
 	.bss ALIGN (0x1000) : AT (ADDR(.bss) - KERNEL_BASE) {
-		* (.bss)
+		* (.bss*)
 	}
 }
 
