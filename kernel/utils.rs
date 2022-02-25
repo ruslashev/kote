@@ -13,3 +13,16 @@ pub fn po2_round_down(value: u64, po2: u64) -> u64 {
 pub fn po2_round_up(value: u64, po2: u64) -> u64 {
     (value + po2 - 1) & !(po2 - 1)
 }
+
+#[macro_export]
+macro_rules! print_backtrace {
+    () => {
+        use $crate::arch::backtrace::Backtrace;
+
+        println!("Backtrace:");
+
+        for (i, addr) in Backtrace::from_here().enumerate() {
+            println!("{:>2}) {:#x}", i + 1, addr);
+        }
+    };
+}

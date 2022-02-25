@@ -11,6 +11,8 @@ use crate::serial::SERIAL_LOCK;
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
 
+    print_backtrace!();
+
     loop {}
 }
 

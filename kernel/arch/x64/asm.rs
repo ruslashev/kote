@@ -36,3 +36,25 @@ pub mod io {
         outb(0x80, 0); // unused port
     }
 }
+
+macro_rules! read_reg {
+    ($reg:ident) => {
+        unsafe {
+            use core::arch::asm;
+
+            let val: u64;
+
+            asm!(concat!("mov {}, ", stringify!($reg)),
+                out(reg) val,
+                options(nomem, nostack));
+
+            val
+        }
+    }
+}
+
+macro_rules! read_fp {
+    () => {
+        read_reg!(rbp)
+    };
+}

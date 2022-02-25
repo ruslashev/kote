@@ -10,6 +10,10 @@ impl Backtrace {
     pub fn from_rbp(rbp: u64) -> Self {
         Backtrace { rbp }
     }
+
+    pub fn from_here() -> Self {
+        Backtrace { rbp: read_fp!() }
+    }
 }
 
 impl Iterator for Backtrace {

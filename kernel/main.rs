@@ -13,6 +13,9 @@
 #[macro_use]
 mod printk;
 
+#[macro_use]
+mod utils;
+
 #[cfg(target_arch = "x86_64")]
 #[path = "arch/x64/mod.rs"]
 mod arch;
@@ -23,7 +26,6 @@ mod multiboot;
 mod panic;
 mod serial;
 mod spinlock;
-mod utils;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
@@ -47,12 +49,16 @@ fn call1() {
 }
 
 fn call2() {
-    let big = [16; 123];
+    let _big = [16; 123];
 
     call3();
 }
 
 fn call3() {
+    print_backtrace!();
+
+    panic!("uh oh");
+
     use core::arch::asm;
     unsafe {
         asm!("mov eax, 1", "mov ecx, 0", "div ecx");
