@@ -8,10 +8,12 @@ macro_rules! println {
         use core::fmt::Write;
         use $crate::serial::SERIAL_LOCK;
         use $crate::console::CONSOLE;
+        use $crate::arch::interrupts;
 
-        // 1. Lock after constructing parameters to avoid a deadlock on interrupt,
-        // 2. Match is used here because we can't create a `let args = format_args!($($arg)*)`
-        //    binding, see https://stackoverflow.com/a/48732525/1063961
+        interrupts::disable();
+
+        // Match is used here because we can't create a `let args = format_args!($($arg)*)` binding,
+        // see https://stackoverflow.com/a/48732525/1063961
         match format_args!($($arg)*) {
             args => {
                 let mut serial = SERIAL_LOCK.guard();
@@ -22,6 +24,8 @@ macro_rules! println {
                 writeln!(console, "{}", args).unwrap();
             }
         }
+
+        interrupts::enable();
     });
 }
 
