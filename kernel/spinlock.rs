@@ -2,9 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// A very simple, and far from being the best, spinlock. A good implementation should hold
-// owndership of the data that is supposed to have a mutually exlusive access.
-
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
@@ -54,6 +51,14 @@ impl<T> SpinlockMutex<T> {
     pub fn guard(&self) -> SpinlockGuard<T> {
         self.lock.lock();
 
+        SpinlockGuard {
+            lock: &self.lock,
+            data: unsafe { &mut *self.data.get() },
+        }
+    }
+
+    /// Used as last resort (e.g. before/during panicking) and leaves spinlock in unusable state
+    pub fn force_unlock(&self) -> SpinlockGuard<T> {
         SpinlockGuard {
             lock: &self.lock,
             data: unsafe { &mut *self.data.get() },

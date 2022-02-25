@@ -5,13 +5,17 @@
 use core::fmt::Write;
 use core::panic::PanicInfo;
 
+use crate::arch::backtrace::Backtrace;
 use crate::serial::SERIAL_LOCK;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
+    println_force!("{}", info);
 
-    print_backtrace!();
+    println_force!("Backtrace:");
+    for (i, addr) in Backtrace::from_here().enumerate() {
+        println_force!("{:>2}) {:#x}", i + 1, addr);
+    }
 
     loop {}
 }
