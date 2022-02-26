@@ -6,10 +6,13 @@ use core::fmt::Write;
 use core::panic::PanicInfo;
 
 use crate::arch::backtrace::Backtrace;
+use crate::arch::interrupts;
 use crate::serial::SERIAL_LOCK;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    interrupts::disable();
+
     println_force!("{}", info);
 
     println_force!("Backtrace:");
@@ -28,6 +31,10 @@ pub fn panic_no_serial(_message: &str) {
 
 /// Panic at early boot stage when there's serial but no graphics. Print to serial.
 pub fn panic_no_graphics(message: &str) {
-    let mut serial = SERIAL_LOCK.guard();
+    interrupts::disable();
+
+    let mut serial = SERIAL_LOCK.force_unlock();
     writeln!(&mut serial, "{}", message).unwrap();
+
+    loop {}
 }
