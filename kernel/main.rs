@@ -22,6 +22,7 @@ mod arch;
 
 mod console;
 mod consts;
+mod dwarf;
 mod elf;
 mod multiboot;
 mod panic;
@@ -34,6 +35,8 @@ pub extern "C" fn kmain() {
     let info = multiboot::parse();
     console::init(&info);
     arch::interrupts::init();
+    dwarf::init(&info);
+
     arch::interrupts::enable();
 
     println!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
