@@ -22,6 +22,7 @@ mod arch;
 
 mod console;
 mod consts;
+mod elf;
 mod multiboot;
 mod panic;
 mod serial;

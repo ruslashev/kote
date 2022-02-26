@@ -7,6 +7,7 @@
 
 use core::mem::size_of;
 
+use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
 use crate::utils;
 
@@ -17,6 +18,7 @@ extern "C" {
 #[derive(Default)]
 pub struct BootloaderInfo {
     pub framebuffer: FramebufferInfo,
+    pub section_headers: Option<SectionInfo>,
 }
 
 #[derive(Default)]
@@ -32,6 +34,12 @@ pub struct FramebufferInfo {
     pub green_mask_sz: u8,
     pub blue_pos: u8,
     pub blue_mask_sz: u8,
+}
+
+pub struct SectionInfo {
+    pub num_shdrs: usize,
+    pub shdrs: *const Elf64Shdr,
+    pub shstrtab_idx: usize,
 }
 
 /// Parse multiboot information structure located address `mb_info`, stored during boot in start.s.
@@ -85,6 +93,7 @@ pub fn parse() -> BootloaderInfo {
             4 => parse_mem_info(header),
             6 => parse_mem_map(header),
             8 => parse_framebuffer_info(header, &mut info),
+            9 => parse_elf_sections(header, &mut info),
             _ => {}
         }
 
@@ -179,8 +188,7 @@ fn parse_mem_map(header: *const u32) {
 }
 
 fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
-    /*
-     *        +--------------------+
+    /*        +--------------------+
      * u32    | type = 8           |
      * u32    | size               |
      * u64    | framebuffer_addr   |
@@ -248,4 +256,33 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
         blue_pos: fb.blue_pos,
         blue_mask_sz: fb.blue_mask_sz,
     };
+}
+
+fn parse_elf_sections(header: *const u32, info: &mut BootloaderInfo) {
+    // The diagram in the documentation states that fields num, entsize and shndx are u16, but it is
+    // clearly outdated, as even the code in that same page declares that fields are, in fact, u32.
+
+    /*        +-------------------+
+     * u32    | type = 9          |
+     * u32    | size              |
+     * u32    | num               |
+     * u32    | entsize           |
+     * u32    | shndx             |
+     * varies | section headers   |
+     *        +-------------------+
+     */
+
+    unsafe {
+        let num_shdrs = header.offset(2).read() as usize;
+        let shstrtab_idx = header.offset(4).read() as usize;
+        let shdrs = header.offset(5).cast::<Elf64Shdr>();
+
+        let sect_info = SectionInfo {
+            num_shdrs,
+            shdrs,
+            shstrtab_idx,
+        };
+
+        info.section_headers = Some(sect_info);
+    }
 }
