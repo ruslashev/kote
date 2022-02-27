@@ -39,32 +39,5 @@ pub extern "C" fn kmain() {
 
     arch::interrupts::enable();
 
-    println!("Hello, World! {} + {} = {}", 1, 2, 1 + 2);
-
-    println!("lole");
-
-    call1();
-
-    println!("continue");
-}
-
-fn call1() {
-    call2();
-}
-
-fn call2() {
-    let _big = [16; 123];
-
-    call3();
-}
-
-fn call3() {
-    print_backtrace!();
-
-    panic!("uh oh");
-
-    use core::arch::asm;
-    unsafe {
-        asm!("mov eax, 1", "mov ecx, 0", "div ecx");
-    }
+    println!("Booting ree...");
 }
