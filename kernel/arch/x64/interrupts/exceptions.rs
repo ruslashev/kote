@@ -44,11 +44,11 @@ static EXCEPTION_HANDLERS: [Exception; 32] = [
 
 struct Exception {
     name: &'static str,
-    handler: Option<fn()>,
+    handler: Option<fn(&ExceptionFrame)>,
 }
 
 impl Exception {
-    const fn with_hdl(name: &'static str, handler: fn()) -> Self {
+    const fn with_hdl(name: &'static str, handler: fn(&ExceptionFrame)) -> Self {
         Exception {
             name,
             handler: Some(handler),
@@ -119,29 +119,29 @@ impl Exception {
  * └────────────────────────────────┘
  */
 #[repr(C, packed)]
-struct ExceptionFrame {
-    r15: u64,
-    r14: u64,
-    r13: u64,
-    r12: u64,
-    r11: u64,
-    r10: u64,
-    r9: u64,
-    r8: u64,
-    rbp: u64,
-    rdi: u64,
-    rsi: u64,
-    rdx: u64,
-    rcx: u64,
-    rbx: u64,
-    rax: u64,
-    error_code: u32,
-    exc_vector: u32,
-    return_rip: u64,
-    return_cs: u64,
-    rflags: u64,
-    return_rsp: u64,
-    return_ss: u64,
+pub(super) struct ExceptionFrame {
+    pub r15: u64,
+    pub r14: u64,
+    pub r13: u64,
+    pub r12: u64,
+    pub r11: u64,
+    pub r10: u64,
+    pub r9: u64,
+    pub r8: u64,
+    pub rbp: u64,
+    pub rdi: u64,
+    pub rsi: u64,
+    pub rdx: u64,
+    pub rcx: u64,
+    pub rbx: u64,
+    pub rax: u64,
+    pub error_code: u32,
+    pub exc_vector: u32,
+    pub return_rip: u64,
+    pub return_cs: u64,
+    pub rflags: u64,
+    pub return_rsp: u64,
+    pub return_ss: u64,
 }
 
 impl fmt::Display for ExceptionFrame {
@@ -157,27 +157,28 @@ impl fmt::Display for ExceptionFrame {
         let rsp = self.return_rsp;
         let rbp = self.rbp;
 
-        writeln!(f, "RIP {:#x}", rip)?;
-        writeln!(f, "RDI {:#x}", rdi)?;
-        writeln!(f, "RSI {:#x}", rsi)?;
-        writeln!(f, "RDX {:#x}", rdx)?;
-        writeln!(f, "RCX {:#x}", rcx)?;
-        writeln!(f, "R8  {:#x}", r8)?;
-        writeln!(f, "R9  {:#x}", r9)?;
-        writeln!(f, "RSP {:#x}", rsp)?;
-        writeln!(f, "RBP {:#x}", rbp)?;
+        writeln!(f, "RIP 0x{:<16x} RSP 0x{:<16x} RBP 0x{:<16x}", rip, rsp, rbp)?;
+        writeln!(f, "RDI 0x{:<16x} RSI 0x{:<16x} RDX 0x{:<16x}", rdi, rsi, rdx)?;
+        writeln!(f, "RCX 0x{:<16x} R8  0x{:<16x} R9  0x{:<16x}", rcx, r8, r9)?;
 
         let flags = self.rflags;
+        let err_code = self.error_code;
 
-        writeln!(f, "Flags {:#b}", flags)?;
+        writeln!(f, "Flags 0b{:022b} Err. code {:#x}", flags, err_code)?;
+
+        let mut backtrace = Backtrace::from_rbp(rbp).into_iter().enumerate().peekable();
 
         writeln!(f, "Backtrace:")?;
-        writeln!(f, " 1) {:#x}", rip)?;
-
-        let mut counter = 2;
-        for addr in Backtrace::from_rbp(rbp) {
-            writeln!(f, "{:>2}) {:#x}", counter, addr)?;
-            counter += 1;
+        if backtrace.peek().is_none() {
+            write!(f, " 1) {:#x}", rip)?;
+        } else {
+            while let Some((i, addr)) = backtrace.next() {
+                if backtrace.peek().is_some() {
+                    writeln!(f, "{:>2}) {:#x}", i + 2, addr)?;
+                } else {
+                    write!(f, "{:>2}) {:#x}", i + 2, addr)?;
+                }
+            }
         }
 
         Ok(())
@@ -195,7 +196,7 @@ pub extern "C" fn exception_dispatch(rsp: u64) {
     println!("{}", frame);
 
     if let Some(handler) = exc_handler.handler {
-        handler.call(());
+        handler.call((frame,));
     }
 
     loop {}
