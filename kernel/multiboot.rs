@@ -90,7 +90,6 @@ pub fn parse() -> BootloaderInfo {
 
         match tag_type {
             0 => break,
-            4 => parse_mem_info(header),
             6 => parse_mem_map(header),
             8 => parse_framebuffer_info(header, &mut info),
             9 => parse_elf_sections(header, &mut info),
@@ -102,25 +101,6 @@ pub fn parse() -> BootloaderInfo {
     }
 
     info
-}
-
-fn parse_mem_info(header: *const u32) {
-    /*     +-------------------+
-     * u32 | type = 4          |
-     * u32 | size = 16         |
-     * u32 | mem_lower         |
-     * u32 | mem_upper         |
-     *     +-------------------+
-     *
-     * `mem_lower` and `mem_upper` indicate the amount of lower and upper memory, respectively, in
-     * kilobytes. Lower memory starts at address 0, and upper memory starts at address 1 megabyte.
-     * The maximum possible value for lower memory is 640 kilobytes. The value returned for upper
-     * memory is maximally the address of the first upper memory hole minus 1 megabyte. It is not
-     * guaranteed to be this value.
-     */
-
-    let _mem_lower = unsafe { header.offset(2).read() };
-    let _mem_upper = unsafe { header.offset(3).read() };
 }
 
 fn parse_mem_map(header: *const u32) {
