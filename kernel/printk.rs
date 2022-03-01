@@ -36,25 +36,23 @@ macro_rules! println_serial {
 }
 
 pub fn do_println(args: &fmt::Arguments, force: bool, no_cons: bool) {
-    interrupts::disable();
-
-    if no_cons {
-        let mut serial = SERIAL_LOCK.guard();
-        writeln!(&mut serial, "{}", &args).unwrap();
-    } else {
-        let (mut serial, mut cons_cell) = if force {
-            (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
+    interrupts::with_disabled(|| {
+        if no_cons {
+            let mut serial = SERIAL_LOCK.guard();
+            writeln!(&mut serial, "{}", &args).unwrap();
         } else {
-            (SERIAL_LOCK.guard(), CONSOLE.guard())
-        };
+            let (mut serial, mut cons_cell) = if force {
+                (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
+            } else {
+                (SERIAL_LOCK.guard(), CONSOLE.guard())
+            };
 
-        let console = cons_cell.get_mut().unwrap();
+            let console = cons_cell.get_mut().unwrap();
 
-        writeln!(&mut serial, "{}", &args).unwrap();
-        writeln!(console, "{}", args).unwrap();
-    }
-
-    interrupts::enable();
+            writeln!(&mut serial, "{}", &args).unwrap();
+            writeln!(console, "{}", args).unwrap();
+        }
+    });
 }
 
 // Copied from std
