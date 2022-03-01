@@ -143,15 +143,6 @@ fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
         let length = entry.length as usize;
         let end = start + length - 1;
 
-        let type_str = match entry.etype {
-            1 => "Available",
-            3 => "ACPI",
-            5 => "Defective RAM",
-            _ => "Reserved",
-        };
-
-        println_serial!("{:#18x} .. {:#18x} ({}) {}", start, end, length, type_str);
-
         if mmap_entry >= MMAP_MAX_ENTRIES {
             panic_no_graphics("Multiboot: mmap entry overflow");
         }
@@ -220,7 +211,7 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
         height: u32,
         bpp: u8,
         ftype: u8,
-        reserved: u8,
+        reserved: u16,
         red_pos: u8,
         red_mask_sz: u8,
         green_pos: u8,
