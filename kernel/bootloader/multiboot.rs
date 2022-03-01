@@ -7,7 +7,7 @@
 
 use core::mem::size_of;
 
-use super::{Bootloader, BootloaderInfo, FramebufferInfo, SectionInfo};
+use super::{Bootloader, BootloaderInfo, FramebufferInfo, Region, SectionInfo, MMAP_MAX_ENTRIES};
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
 use crate::utils;
@@ -72,7 +72,7 @@ fn parse() -> BootloaderInfo {
 
         match tag_type {
             0 => break,
-            6 => parse_mem_map(header),
+            6 => parse_mem_map(header, &mut info),
             8 => parse_framebuffer_info(header, &mut info),
             9 => parse_elf_sections(header, &mut info),
             _ => {}
@@ -85,7 +85,7 @@ fn parse() -> BootloaderInfo {
     info
 }
 
-fn parse_mem_map(header: *const u32) {
+fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
     /*        +-------------------+
      * u32    | type = 6          |
      * u32    | size              |
@@ -134,12 +134,33 @@ fn parse_mem_map(header: *const u32) {
 
     let mut entries = unsafe { header.offset(4).cast::<Entry>() };
     let mut total_size = 0;
+    let mut mmap = [Region::default(); MMAP_MAX_ENTRIES];
+    let mut mmap_entry = 0;
 
     while total_size < tag_size {
         let entry = unsafe { entries.read() };
-        let _base_addr = entry.base_addr;
-        let _length = entry.length;
-        let _etype = entry.etype;
+        let start = entry.base_addr as usize;
+        let length = entry.length as usize;
+        let end = start + length - 1;
+
+        let type_str = match entry.etype {
+            1 => "Available",
+            3 => "ACPI",
+            5 => "Defective RAM",
+            _ => "Reserved",
+        };
+
+        println_serial!("{:#18x} .. {:#18x} ({}) {}", start, end, length, type_str);
+
+        if mmap_entry >= MMAP_MAX_ENTRIES {
+            panic_no_graphics("Multiboot: mmap entry overflow");
+        }
+
+        // Available
+        if entry.etype == 1 {
+            mmap[mmap_entry] = Region { start, end };
+            mmap_entry += 1;
+        }
 
         unsafe {
             entries = entries.add(1);
@@ -147,6 +168,9 @@ fn parse_mem_map(header: *const u32) {
 
         total_size += entry_size;
     }
+
+    info.memory_map = Some(mmap);
+    info.num_mmap_entries = mmap_entry;
 }
 
 fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {

@@ -6,14 +6,24 @@ mod multiboot;
 
 use crate::elf::Elf64Shdr;
 
+const MMAP_MAX_ENTRIES: usize = 10;
+
 trait Bootloader {
     fn get_info() -> BootloaderInfo;
 }
 
 #[derive(Default)]
 pub struct BootloaderInfo {
+    pub memory_map: Option<[Region; MMAP_MAX_ENTRIES]>,
+    pub num_mmap_entries: usize,
     pub framebuffer: FramebufferInfo,
     pub section_headers: Option<SectionInfo>,
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct Region {
+    pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Default)]
