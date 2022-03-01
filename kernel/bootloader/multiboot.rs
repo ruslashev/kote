@@ -7,6 +7,7 @@
 
 use core::mem::size_of;
 
+use super::{Bootloader, BootloaderInfo, FramebufferInfo, SectionInfo};
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
 use crate::utils;
@@ -15,35 +16,16 @@ extern "C" {
     static mb_info: u64;
 }
 
-#[derive(Default)]
-pub struct BootloaderInfo {
-    pub framebuffer: FramebufferInfo,
-    pub section_headers: Option<SectionInfo>,
-}
+pub struct Multiboot;
 
-#[derive(Default)]
-pub struct FramebufferInfo {
-    pub addr: u64,
-    pub width: u32,
-    pub height: u32,
-    pub pitch: u32,
-    pub bpp: u8,
-    pub red_pos: u8,
-    pub red_mask_sz: u8,
-    pub green_pos: u8,
-    pub green_mask_sz: u8,
-    pub blue_pos: u8,
-    pub blue_mask_sz: u8,
-}
-
-pub struct SectionInfo {
-    pub num_shdrs: usize,
-    pub shdrs: *const Elf64Shdr,
-    pub shstrtab_idx: usize,
+impl Bootloader for Multiboot {
+    fn get_info() -> BootloaderInfo {
+        parse()
+    }
 }
 
 /// Parse multiboot information structure located address `mb_info`, stored during boot in start.s.
-pub fn parse() -> BootloaderInfo {
+fn parse() -> BootloaderInfo {
     /* Boot information consists of fixed part and a series of tags.
      * Its start is 8-bytes aligned. Fixed part is as following:
      *

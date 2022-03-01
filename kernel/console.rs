@@ -4,7 +4,7 @@
 
 use core::lazy::OnceCell;
 
-use crate::multiboot::BootloaderInfo;
+use crate::bootloader::BootloaderInfo;
 use crate::panic::panic_no_graphics;
 use crate::spinlock::SpinlockMutex;
 

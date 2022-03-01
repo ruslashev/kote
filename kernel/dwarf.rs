@@ -5,7 +5,7 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 use core::{slice, str};
 
-use crate::multiboot::BootloaderInfo;
+use crate::bootloader::BootloaderInfo;
 
 struct State {
     address: usize,
@@ -104,7 +104,7 @@ pub fn init(info: &BootloaderInfo) {
             }
         }
 
-        assert!(name_end.is_some(), "Multiboot: shstrtab overflow");
+        assert!(name_end.is_some(), "DWARF: kernel shstrtab overflow");
 
         let name_end = name_end.unwrap();
         let name = str::from_utf8(&shstrtab[name_beg..name_end]).unwrap();

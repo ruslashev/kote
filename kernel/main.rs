@@ -20,11 +20,11 @@ mod utils;
 #[path = "arch/x64/mod.rs"]
 mod arch;
 
+mod bootloader;
 mod console;
 mod consts;
 mod dwarf;
 mod elf;
-mod multiboot;
 mod panic;
 mod serial;
 mod spinlock;
@@ -32,7 +32,7 @@ mod spinlock;
 #[no_mangle]
 pub extern "C" fn kmain() {
     serial::init();
-    let info = multiboot::parse();
+    let info = bootloader::get_info();
     console::init(&info);
     arch::interrupts::init();
     dwarf::init(&info);
