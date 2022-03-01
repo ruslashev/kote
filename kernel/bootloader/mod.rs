@@ -14,10 +14,15 @@ trait Bootloader {
 
 #[derive(Default)]
 pub struct BootloaderInfo {
-    pub memory_map: Option<[Region; MMAP_MAX_ENTRIES]>,
-    pub num_mmap_entries: usize,
+    pub memory_map: Option<MemoryMap>,
     pub framebuffer: FramebufferInfo,
     pub section_headers: Option<SectionInfo>,
+}
+
+#[derive(Default)]
+pub struct MemoryMap {
+    pub regions: [Region; MMAP_MAX_ENTRIES],
+    pub num_entries: usize,
 }
 
 #[derive(Default, Clone, Copy)]

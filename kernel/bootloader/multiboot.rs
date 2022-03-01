@@ -7,7 +7,7 @@
 
 use core::mem::size_of;
 
-use super::{Bootloader, BootloaderInfo, FramebufferInfo, Region, SectionInfo, MMAP_MAX_ENTRIES};
+use super::*;
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
 use crate::utils;
@@ -169,8 +169,10 @@ fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
         total_size += entry_size;
     }
 
-    info.memory_map = Some(mmap);
-    info.num_mmap_entries = mmap_entry;
+    info.memory_map = Some(MemoryMap {
+        regions: mmap,
+        num_entries: mmap_entry,
+    });
 }
 
 fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
