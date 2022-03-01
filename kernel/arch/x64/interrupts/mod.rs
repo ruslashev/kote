@@ -30,3 +30,47 @@ pub fn disable() {
         asm!("cli", options(nostack));
     }
 }
+
+#[inline(always)]
+pub fn are_enabled() -> bool {
+    let flags: u64;
+    let intr_flag = 1 << 9;
+
+    unsafe {
+        asm!("pushf",
+             "popf {}",
+             out(reg) flags,
+             options(preserves_flags));
+    }
+
+    (flags & intr_flag) != 0
+}
+
+pub fn with_disabled<F: FnMut()>(mut f: F) {
+    let flags = save_flags_cli();
+    f();
+    restore_flags(flags);
+}
+
+#[inline(always)]
+fn save_flags_cli() -> u64 {
+    let flags;
+
+    unsafe {
+        asm!("pushf",
+             "cli",
+             "pop {}",
+             out(reg) flags);
+    }
+
+    flags
+}
+
+#[inline(always)]
+fn restore_flags(flags: u64) {
+    unsafe {
+        asm!("push {}",
+             "popf",
+             in(reg) flags);
+    }
+}
