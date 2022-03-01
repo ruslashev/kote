@@ -35,7 +35,6 @@ pub extern "C" fn kmain() {
     let info = bootloader::get_info();
     console::init(&info);
     arch::interrupts::init();
-    dwarf::init(&info);
 
     arch::interrupts::enable();
 
