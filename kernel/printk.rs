@@ -17,30 +17,42 @@ use crate::serial::SERIAL_LOCK;
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => ({
-        $crate::printk::do_println(&format_args!($($arg)*), false);
+        $crate::printk::do_println(&format_args!($($arg)*), false, false);
     });
 }
 
 #[macro_export]
 macro_rules! println_force {
     ($($arg:tt)*) => ({
-        $crate::printk::do_println(&format_args!($($arg)*), true);
+        $crate::printk::do_println(&format_args!($($arg)*), true, false);
     });
 }
 
-pub fn do_println(args: &fmt::Arguments, force: bool) {
+#[macro_export]
+macro_rules! println_serial {
+    ($($arg:tt)*) => ({
+        $crate::printk::do_println(&format_args!($($arg)*), false, true);
+    });
+}
+
+pub fn do_println(args: &fmt::Arguments, force: bool, no_cons: bool) {
     interrupts::disable();
 
-    let (mut serial, mut cons_cell) = if force {
-        (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
+    if no_cons {
+        let mut serial = SERIAL_LOCK.guard();
+        writeln!(&mut serial, "{}", &args).unwrap();
     } else {
-        (SERIAL_LOCK.guard(), CONSOLE.guard())
-    };
+        let (mut serial, mut cons_cell) = if force {
+            (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
+        } else {
+            (SERIAL_LOCK.guard(), CONSOLE.guard())
+        };
 
-    let console = cons_cell.get_mut().unwrap();
+        let console = cons_cell.get_mut().unwrap();
 
-    writeln!(&mut serial, "{}", &args).unwrap();
-    writeln!(console, "{}", args).unwrap();
+        writeln!(&mut serial, "{}", &args).unwrap();
+        writeln!(console, "{}", args).unwrap();
+    }
 
     interrupts::enable();
 }
