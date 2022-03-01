@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #[macro_use]
-pub mod asm;
+mod asm;
 pub mod backtrace;
 pub mod interrupts;
+pub mod uart;
