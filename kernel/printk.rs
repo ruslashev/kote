@@ -7,54 +7,42 @@
 // binding. Its usage here is similar to an absent `let x = expr in { … }` construct.
 // See https://stackoverflow.com/a/48732525/1063961
 
+use core::fmt;
+use core::fmt::Write;
+
+use crate::arch::interrupts;
+use crate::console::CONSOLE;
+use crate::serial::SERIAL_LOCK;
+
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => ({
-        use core::fmt::Write;
-        use $crate::serial::SERIAL_LOCK;
-        use $crate::console::CONSOLE;
-        use $crate::arch::interrupts;
-
-        interrupts::disable();
-
-        match format_args!($($arg)*) {
-            args => {
-                let mut serial = SERIAL_LOCK.guard();
-                let mut cons_cell = CONSOLE.guard();
-                let console = cons_cell.get_mut().unwrap();
-
-                writeln!(&mut serial, "{}", &args).unwrap();
-                writeln!(console, "{}", args).unwrap();
-            }
-        }
-
-        interrupts::enable();
+        $crate::printk::do_println(&format_args!($($arg)*), false);
     });
 }
 
 #[macro_export]
 macro_rules! println_force {
     ($($arg:tt)*) => ({
-        use core::fmt::Write;
-        use $crate::serial::SERIAL_LOCK;
-        use $crate::console::CONSOLE;
-        use $crate::arch::interrupts;
-
-        interrupts::disable();
-
-        match format_args!($($arg)*) {
-            args => {
-                let mut serial = SERIAL_LOCK.force_unlock();
-                let mut cons_cell = CONSOLE.force_unlock();
-                let console = cons_cell.get_mut().unwrap();
-
-                writeln!(&mut serial, "{}", &args).unwrap();
-                writeln!(console, "{}", args).unwrap();
-            }
-        }
-
-        interrupts::enable();
+        $crate::printk::do_println(&format_args!($($arg)*), true);
     });
+}
+
+pub fn do_println(args: &fmt::Arguments, force: bool) {
+    interrupts::disable();
+
+    let (mut serial, mut cons_cell) = if force {
+        (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
+    } else {
+        (SERIAL_LOCK.guard(), CONSOLE.guard())
+    };
+
+    let console = cons_cell.get_mut().unwrap();
+
+    writeln!(&mut serial, "{}", &args).unwrap();
+    writeln!(console, "{}", args).unwrap();
+
+    interrupts::enable();
 }
 
 // Copied from std
