@@ -6,6 +6,7 @@
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 #![allow(clippy::identity_op)]
+#![allow(clippy::match_single_binding)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(fn_traits)]
 #![feature(once_cell)]
@@ -39,6 +40,8 @@ pub extern "C" fn kmain() {
     arch::interrupts::enable();
 
     println!("Booting ree...");
+
+    println!("{}", info.section_headers.unwrap());
 
     use core::arch::asm;
     unsafe {

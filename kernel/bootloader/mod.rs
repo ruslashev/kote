@@ -4,6 +4,9 @@
 
 mod multiboot;
 
+use core::fmt;
+use core::{slice, str};
+
 use crate::elf::Elf64Shdr;
 
 const MMAP_MAX_ENTRIES: usize = 10;
@@ -50,6 +53,79 @@ pub struct SectionInfo {
     pub num_shdrs: usize,
     pub shdrs: *const Elf64Shdr,
     pub shstrtab_idx: usize,
+}
+
+pub struct SectionInfoIterator<'a> {
+    idx: usize,
+    shstrtab: &'a [u8],
+    info: &'a SectionInfo,
+}
+
+impl<'i> SectionInfoIterator<'i> {
+    fn from_info(info: &'i SectionInfo) -> Self {
+        let shstrtab = unsafe {
+            let idx = info.shstrtab_idx;
+            let shdr = info.shdrs.add(idx).read();
+            let addr = shdr.sh_addr as *const u8;
+            let size = shdr.sh_size as usize;
+            slice::from_raw_parts(addr, size)
+        };
+
+        SectionInfoIterator {
+            idx: 0,
+            shstrtab,
+            info,
+        }
+    }
+}
+
+impl<'a> Iterator for SectionInfoIterator<'a> {
+    type Item = (&'a str, &'a Elf64Shdr);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.info.num_shdrs {
+            let shdr = unsafe { &*self.info.shdrs.add(self.idx) };
+
+            let name_beg = shdr.sh_name as usize;
+            let mut name_end = None;
+
+            for (end_idx, &ch) in self.shstrtab.iter().enumerate().skip(name_beg) {
+                if ch == 0 {
+                    name_end = Some(end_idx);
+                    break;
+                }
+            }
+
+            assert!(name_end.is_some(), "Kernel shstrtab overflow");
+
+            let name_end = name_end.unwrap();
+            let name = if name_end == 0 {
+                "null"
+            } else {
+                str::from_utf8(&self.shstrtab[name_beg..name_end]).unwrap()
+            };
+
+            self.idx += 1;
+            Some((name, shdr))
+        } else {
+            None
+        }
+    }
+}
+
+impl fmt::Display for SectionInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (name, shdr) in SectionInfoIterator::from_info(self) {
+            let sh_type = shdr.sh_type;
+            let sh_flags = shdr.sh_flags;
+            let sh_addr = shdr.sh_addr;
+            let sh_size = shdr.sh_size;
+
+            writeln!(f, "{:15} {} {:06b} {:16x} {}", name, sh_type, sh_flags, sh_addr, sh_size)?;
+        }
+
+        Ok(())
+    }
 }
 
 pub fn get_info() -> BootloaderInfo {
