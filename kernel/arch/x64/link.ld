@@ -24,12 +24,12 @@ SECTIONS {
 		* (.text*)
 	}
 
-	.data ALIGN (0x1000) : AT (ADDR(.data) - KERNEL_BASE) {
-		* (.data*)
-	}
-
 	.rodata ALIGN (0x1000) : AT (ADDR(.rodata) - KERNEL_BASE) {
 		* (.rodata*)
+	}
+
+	.data ALIGN (0x1000) : AT (ADDR(.data) - KERNEL_BASE) {
+		* (.data*)
 	}
 
 	.bss ALIGN (0x1000) : AT (ADDR(.bss) - KERNEL_BASE) {
