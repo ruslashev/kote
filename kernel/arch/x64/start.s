@@ -6,6 +6,8 @@ global start
 global mb_info
 
 extern kmain
+extern __sbss
+extern __ebss
 
 %define KERNEL_BASE 0xffffffff80000000
 %define KERNEL_STACK_SZ 4096 * 4
@@ -55,8 +57,22 @@ mb_end:
 bits 32
 section .inittext
 start:
-	; Clear interrupts
+	; Clear interrupt flag
 	cli
+
+	; Save eax passed from multiboot
+	mov edx, eax
+
+	; Clear .bss
+	mov ecx, RELOC(__ebss)
+	sub ecx, RELOC(__sbss)
+	inc ecx
+	xor eax, eax
+	mov edi, RELOC(__sbss)
+	rep stosb
+
+	; Restore eax
+	mov eax, edx
 
 	; Set up stack
 	mov esp, RELOC(stack_botmost)

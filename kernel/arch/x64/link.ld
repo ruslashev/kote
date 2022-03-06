@@ -33,7 +33,9 @@ SECTIONS {
 	}
 
 	.bss ALIGN (0x1000) : AT (ADDR(.bss) - KERNEL_BASE) {
+		__sbss = .;
 		* (.bss*)
+		__ebss = .;
 	}
 }
 
