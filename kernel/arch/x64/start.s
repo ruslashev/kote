@@ -231,9 +231,7 @@ hltspin:
 	hlt
 	jmp hltspin
 
-section .data
-mb_info:
-	dq 0
+section .rodata
 gdt:
 %define RW (1 << 41) ; Readable (for code) / Writable (for data)
 %define Ex (1 << 43) ; Executable
@@ -259,6 +257,8 @@ pd:
 	resb 4096
 pd_fb:
 	resb 4096
+mb_info:
+	resq 1
 stack_topmost:
 	resb KERNEL_STACK_SZ
 stack_botmost:
