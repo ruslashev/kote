@@ -22,7 +22,7 @@ static EXCEPTION_HANDLERS: [Exception; 32] = [
     Exception::stub_hdl("Segment Not Present"),                            // 11
     Exception::stub_hdl("Stack-Segment Fault"),                            // 12
     Exception::stub_hdl("General Protection Fault"),                       // 13
-    Exception::stub_hdl("Page Fault"),                                     // 14
+    Exception::with_hdl("Page Fault", handlers::page_fault),               // 14
     Exception::reserved(),                                                 // 15
     Exception::stub_hdl("x87 Floating-Point Exception"),                   // 16
     Exception::stub_hdl("Alignment Check"),                                // 17

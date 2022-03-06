@@ -39,4 +39,9 @@ pub extern "C" fn kmain() {
     arch::interrupts::enable();
 
     println!("Booting ree...");
+
+    use core::arch::asm;
+    unsafe {
+        asm!("mov rax, [0xffffffff90000000]");
+    }
 }
