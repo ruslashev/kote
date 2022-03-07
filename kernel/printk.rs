@@ -16,23 +16,23 @@ use crate::serial::SERIAL_LOCK;
 
 #[macro_export]
 macro_rules! println {
-    ($($arg:tt)*) => ({
+    ($($arg:tt)*) => {
         $crate::printk::do_println(&format_args!($($arg)*), false, false);
-    });
+    };
 }
 
 #[macro_export]
 macro_rules! println_force {
-    ($($arg:tt)*) => ({
+    ($($arg:tt)*) => {
         $crate::printk::do_println(&format_args!($($arg)*), true, false);
-    });
+    };
 }
 
 #[macro_export]
 macro_rules! println_serial {
-    ($($arg:tt)*) => ({
+    ($($arg:tt)*) => {
         $crate::printk::do_println(&format_args!($($arg)*), false, true);
-    });
+    };
 }
 
 pub fn do_println(args: &fmt::Arguments, force: bool, no_cons: bool) {
@@ -47,10 +47,11 @@ pub fn do_println(args: &fmt::Arguments, force: bool, no_cons: bool) {
                 (SERIAL_LOCK.guard(), CONSOLE.guard())
             };
 
-            let console = cons_cell.get_mut().unwrap();
-
             writeln!(&mut serial, "{}", &args).unwrap();
-            writeln!(console, "{}", args).unwrap();
+
+            if let Some(console) = cons_cell.get_mut() {
+                writeln!(console, "{}", args).unwrap();
+            }
         }
     });
 }
