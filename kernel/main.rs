@@ -8,6 +8,8 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::match_single_binding)]
 #![feature(const_fn_fn_ptr_basics)]
+#![feature(const_mut_refs)]
+#![feature(const_slice_from_raw_parts)]
 #![feature(fn_traits)]
 #![feature(once_cell)]
 
@@ -26,6 +28,7 @@ mod console;
 mod consts;
 mod dwarf;
 mod elf;
+mod mm;
 mod panic;
 mod serial;
 mod spinlock;
@@ -36,6 +39,7 @@ pub extern "C" fn kmain() {
     let info = bootloader::get_info();
     console::init(&info);
     arch::interrupts::init();
+    mm::init();
 
     arch::interrupts::enable();
 

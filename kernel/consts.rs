@@ -5,3 +5,23 @@
 pub const PAGE_SIZE: u64 = 4096;
 
 pub const KERNEL_BASE: u64 = 0xffffffff80000000;
+
+/* Memory layout:
+ * ┌───────────────────────────────┐ 0xffffffffffffffff
+ * │                               │
+ * │                               │
+ * │  Identity mapping for kernel  │ 0xffffffff80000000 KERNEL_BASE
+ * ├───────────────────────────────┤
+ * │   Page allocation structures  │
+ * ├───────────────────────────────┤
+ * │      Framebuffer mapping      │
+ * ├───────────────────────────────┤
+ * │                               │
+ * │          Kernel heap          │
+ *
+ * ╵               .               ╵
+ * ╵               .               ╵
+ *
+ * │                               │
+ * └───────────────────────────────┘
+ */

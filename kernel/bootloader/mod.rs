@@ -7,8 +7,8 @@ mod multiboot;
 use core::fmt;
 use core::{slice, str};
 
-use crate::utils;
 use crate::elf::Elf64Shdr;
+use crate::utils;
 
 const MMAP_MAX_ENTRIES: usize = 32;
 

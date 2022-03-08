@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#[macro_use]
-mod asm;
-pub mod backtrace;
-pub mod interrupts;
-pub mod mm;
-pub mod uart;
+pub mod mmu;
+
+pub fn init() {
+    mmu::init();
+}

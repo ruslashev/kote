@@ -4,6 +4,7 @@
 
 global start
 global mb_info
+global pml4
 
 extern kmain
 extern __sbss
