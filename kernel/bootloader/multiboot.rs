@@ -6,6 +6,7 @@
 // Contains excerpts from https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html
 
 use core::mem::size_of;
+use core::ops::Range;
 
 use super::*;
 use crate::elf::Elf64Shdr;
@@ -82,6 +83,8 @@ fn parse() -> BootloaderInfo {
         total_size -= aligned_size;
     }
 
+    remove_reserved_areas(&mut info);
+
     info
 }
 
@@ -134,14 +137,15 @@ fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
 
     let mut entries = unsafe { header.offset(4).cast::<Entry>() };
     let mut total_size = 0;
-    let mut mmap = [Region::default(); MMAP_MAX_ENTRIES];
+    let empty = Region { start: 0, end: 0 };
+    let mut mmap = [empty; MMAP_MAX_ENTRIES];
     let mut mmap_entry = 0;
 
     while total_size < tag_size {
         let entry = unsafe { entries.read() };
         let start = entry.base_addr as usize;
         let length = entry.length as usize;
-        let end = start + length - 1;
+        let end = start + length;
 
         if mmap_entry >= MMAP_MAX_ENTRIES {
             panic_no_graphics("Multiboot: mmap entry overflow");
@@ -161,7 +165,7 @@ fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
     }
 
     info.memory_map = Some(MemoryMap {
-        regions: mmap,
+        entries: mmap,
         num_entries: mmap_entry,
     });
 }
@@ -263,5 +267,162 @@ fn parse_elf_sections(header: *const u32, info: &mut BootloaderInfo) {
         };
 
         info.section_headers = Some(sect_info);
+    }
+}
+
+fn remove_reserved_areas(info: &mut BootloaderInfo) {
+    if info.memory_map.is_none() || info.section_headers.is_none() {
+        panic!("Systems using Multiboot require both memory mapping and kernel section tags to be present");
+    }
+
+    let mmap = info.memory_map.as_mut().unwrap();
+    let shdrs = &info.section_headers.as_ref().unwrap();
+    let fb = &info.framebuffer;
+    let fb_addr = fb.addr as usize;
+
+    let first_page = 0..0x1000;
+    let io_hole = 0xa0000..0x100000;
+    let fb_range = fb_addr..fb_addr + (fb.height * fb.pitch) as usize;
+
+    let some_reserved = [first_page, io_hole, fb_range];
+    let shdr_ranges = SectionInfoIterator::from_info(shdrs).map(|(_, shdr)| {
+        let a = shdr.sh_addr as usize;
+        let s = shdr.sh_size as usize;
+        a..a + s
+    });
+
+    let mut keep_looping;
+
+    loop {
+        keep_looping = false;
+
+        'restart: for eidx in 0..mmap.num_entries {
+            let entry = mmap.entries[eidx];
+            let all_reserved = shdr_ranges.clone().chain(some_reserved.clone());
+
+            for reserved in all_reserved {
+                let added = resolve_overlaps(
+                    eidx,
+                    &entry,
+                    &reserved,
+                    &mut mmap.entries,
+                    &mut mmap.num_entries,
+                );
+
+                if added {
+                    keep_looping = true;
+                    break 'restart;
+                }
+            }
+        }
+
+        if !keep_looping {
+            break;
+        }
+    }
+
+    cleanup_empty_ranges(&mut mmap.entries, &mut mmap.num_entries);
+
+    sort_ranges(&mut mmap.entries, mmap.num_entries);
+}
+
+fn resolve_overlaps(
+    eidx: usize,
+    entry: &Region,
+    reserved: &Range<usize>,
+    entries: &mut [Region; MMAP_MAX_ENTRIES],
+    num_entries: &mut usize,
+) -> bool {
+    let r = reserved;
+    let e = entry;
+
+    // Ignore empty ranges
+    if (r.start == 0 && r.end == 0) || (e.start == 0 && e.end == 0) {
+        return false;
+    }
+
+    // No overlap
+    // └──────────┘               e
+    //               └──────────┘ r
+    //               └──────────┘ e
+    // └──────────┘               r
+    if r.end <= e.start || e.end <= r.start {
+        return false;
+    }
+
+    // Overlap and `reserved` is to the left
+    //         └──────────┘ e
+    // └──────────┘         r
+    if e.start < r.end && e.start >= r.start {
+        entries[eidx].start = r.end;
+        return false;
+    }
+
+    // Overlap and `reserved` is to the right
+    // └──────────┘         e
+    //         └──────────┘ r
+    if e.end > r.start && e.end <= r.end {
+        entries[eidx].end = r.start;
+        return false;
+    }
+
+    // `entry` is completely inside `reserved`
+    //       └──────┘    e
+    //    └────────────┘ r
+    if r.start <= e.start && r.end >= e.end {
+        entries[eidx].start = 0;
+        entries[eidx].end = 0;
+        return false;
+    }
+
+    // `reserved` is completely inside `entry`
+    //    └────────────┘ e
+    //       └──────┘    r
+    if e.start <= r.start && e.end >= r.end {
+        entries[eidx].end = r.start;
+
+        if *num_entries >= MMAP_MAX_ENTRIES {
+            panic_no_graphics("Multiboot: mmap entry overflow while resolving overlaps");
+        }
+
+        entries[*num_entries].start = r.end;
+        entries[*num_entries].end = e.end;
+        *num_entries += 1;
+        return true;
+    }
+
+    panic!("unexpected range configuration");
+}
+
+fn cleanup_empty_ranges(entries: &mut [Region; MMAP_MAX_ENTRIES], num_entries: &mut usize) {
+    let old_num_entries = *num_entries;
+
+    for eidx in 0..old_num_entries {
+        if entries[eidx].start == 0 && entries[eidx].end == 0 {
+            let ptr = entries.as_mut_ptr();
+
+            unsafe {
+                let src = ptr.add(eidx + 1);
+                let dst = ptr.add(eidx);
+
+                core::ptr::copy(src, dst, *num_entries - eidx - 1);
+            }
+
+            *num_entries -= 1;
+        }
+    }
+}
+
+fn sort_ranges(entries: &mut [Region; MMAP_MAX_ENTRIES], num_entries: usize) {
+    for i in 1..num_entries {
+        let key = entries[i];
+        let mut j = i as isize - 1;
+
+        while j >= 0 && entries[j as usize].start > key.start {
+            entries[j as usize + 1] = entries[j as usize];
+            j -= 1;
+        }
+
+        entries[(j + 1) as usize] = key;
     }
 }

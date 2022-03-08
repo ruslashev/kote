@@ -41,7 +41,11 @@ pub extern "C" fn kmain() {
 
     println!("Booting ree...");
 
-    println!("{}", info.section_headers.unwrap());
+    println!("Available memory:");
+    println!("{}", info.memory_map.as_ref().unwrap());
+
+    println!("Kernel sections:");
+    println!("{}", info.section_headers.as_ref().unwrap());
 
     use core::arch::asm;
     unsafe {

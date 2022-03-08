@@ -9,7 +9,7 @@ use core::{slice, str};
 
 use crate::elf::Elf64Shdr;
 
-const MMAP_MAX_ENTRIES: usize = 10;
+const MMAP_MAX_ENTRIES: usize = 32;
 
 trait Bootloader {
     fn get_info() -> BootloaderInfo;
@@ -22,9 +22,8 @@ pub struct BootloaderInfo {
     pub section_headers: Option<SectionInfo>,
 }
 
-#[derive(Default)]
 pub struct MemoryMap {
-    pub regions: [Region; MMAP_MAX_ENTRIES],
+    pub entries: [Region; MMAP_MAX_ENTRIES],
     pub num_entries: usize,
 }
 
@@ -49,12 +48,14 @@ pub struct FramebufferInfo {
     pub blue_mask_sz: u8,
 }
 
+#[derive(Debug)]
 pub struct SectionInfo {
     pub num_shdrs: usize,
     pub shdrs: *const Elf64Shdr,
     pub shstrtab_idx: usize,
 }
 
+#[derive(Debug, Clone)]
 pub struct SectionInfoIterator<'a> {
     idx: usize,
     shstrtab: &'a [u8],
@@ -122,6 +123,18 @@ impl fmt::Display for SectionInfo {
             let sh_size = shdr.sh_size;
 
             writeln!(f, "{:15} {} {:06b} {:16x} {}", name, sh_type, sh_flags, sh_addr, sh_size)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Display for MemoryMap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for idx in 0..self.num_entries {
+            let Region { start, end } = self.entries[idx];
+
+            writeln!(f, "{:x}..{:<16x}", start, end)?;
         }
 
         Ok(())
