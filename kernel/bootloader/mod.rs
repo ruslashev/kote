@@ -7,6 +7,7 @@ mod multiboot;
 use core::fmt;
 use core::{slice, str};
 
+use crate::utils;
 use crate::elf::Elf64Shdr;
 
 const MMAP_MAX_ENTRIES: usize = 32;
@@ -131,11 +132,19 @@ impl fmt::Display for SectionInfo {
 
 impl fmt::Display for MemoryMap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut npages = 0;
+
         for idx in 0..self.num_entries {
             let Region { start, end } = self.entries[idx];
 
+            let pg_start = utils::page_round_down(start as u64);
+            let pg_end = utils::page_round_up(end as u64);
+            npages += (pg_end - pg_start) / 4096;
+
             writeln!(f, "{:x}..{:<16x}", start, end)?;
         }
+
+        writeln!(f, "npages={}", npages)?;
 
         Ok(())
     }
