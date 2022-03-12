@@ -9,7 +9,6 @@
 #![allow(clippy::match_single_binding)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_mut_refs)]
-#![feature(const_slice_from_raw_parts)]
 #![feature(fn_traits)]
 #![feature(once_cell)]
 

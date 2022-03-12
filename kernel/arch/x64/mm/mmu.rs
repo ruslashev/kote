@@ -46,7 +46,7 @@ impl PML4 {
         }
     }
 
-    const fn from_addr(addr: u64) -> Self {
+    fn from_addr(addr: u64) -> Self {
         let entries = unsafe {
             let addr = addr as *mut PML4E;
             core::slice::from_raw_parts_mut(addr, ENTRIES)
