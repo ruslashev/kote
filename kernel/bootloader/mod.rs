@@ -16,9 +16,8 @@ trait Bootloader {
     fn get_info() -> BootloaderInfo;
 }
 
-#[derive(Default)]
 pub struct BootloaderInfo {
-    pub memory_map: Option<MemoryMap>,
+    pub memory_map: MemoryMap,
     pub framebuffer: FramebufferInfo,
     pub section_headers: Option<SectionInfo>,
 }

@@ -30,7 +30,7 @@ pub fn panic_no_serial(_message: &str) {
 }
 
 /// Panic at early boot stage when there's serial but no graphics. Print to serial.
-pub fn panic_no_graphics(message: &str) {
+pub fn panic_no_graphics(message: &str) -> ! {
     interrupts::disable();
 
     let mut serial = SERIAL_LOCK.force_unlock();

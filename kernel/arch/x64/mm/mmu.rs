@@ -52,10 +52,7 @@ impl PML4 {
             core::slice::from_raw_parts_mut(addr, ENTRIES)
         };
 
-        Self {
-            addr,
-            entries,
-        }
+        Self { addr, entries }
     }
 
     fn clear(&mut self) {

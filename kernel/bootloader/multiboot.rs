@@ -53,7 +53,6 @@ fn parse() -> BootloaderInfo {
      * tag of type `0` and size `8`.
      */
 
-    let mut info = BootloaderInfo::default();
     let mut start = unsafe { mb_info };
     let alignment = 8;
 
@@ -65,6 +64,10 @@ fn parse() -> BootloaderInfo {
 
     start += (size_of::<u32>() as u64) * 2;
 
+    let mut mmap = None;
+    let mut fb = None;
+    let mut shdrs = None;
+
     while total_size > 0 {
         let header = start as *const u32;
         let tag_type = unsafe { header.read() };
@@ -73,9 +76,9 @@ fn parse() -> BootloaderInfo {
 
         match tag_type {
             0 => break,
-            6 => parse_mem_map(header, &mut info),
-            8 => parse_framebuffer_info(header, &mut info),
-            9 => parse_elf_sections(header, &mut info),
+            6 => mmap = Some(parse_mem_map(header)),
+            8 => fb = Some(parse_framebuffer_info(header)),
+            9 => shdrs = Some(parse_elf_sections(header)),
             _ => {}
         }
 
@@ -83,12 +86,19 @@ fn parse() -> BootloaderInfo {
         total_size -= aligned_size;
     }
 
+    let mut info = BootloaderInfo {
+        memory_map: mmap.unwrap_or_else(|| panic_no_graphics("Multiboot: mmap tag not found")),
+        framebuffer: fb
+            .unwrap_or_else(|| panic_no_graphics("Multiboot: framebuffer tag not found")),
+        section_headers: shdrs,
+    };
+
     remove_reserved_areas(&mut info);
 
     info
 }
 
-fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
+fn parse_mem_map(header: *const u32) -> MemoryMap {
     /*        +-------------------+
      * u32    | type = 6          |
      * u32    | size              |
@@ -164,13 +174,13 @@ fn parse_mem_map(header: *const u32, info: &mut BootloaderInfo) {
         total_size += entry_size;
     }
 
-    info.memory_map = Some(MemoryMap {
+    MemoryMap {
         entries: mmap,
         num_entries: mmap_entry,
-    });
+    }
 }
 
-fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
+fn parse_framebuffer_info(header: *const u32) -> FramebufferInfo {
     /*        +--------------------+
      * u32    | type = 8           |
      * u32    | size               |
@@ -226,7 +236,7 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
 
     let fb = unsafe { header.cast::<FrameBufferTag>().read() };
 
-    info.framebuffer = FramebufferInfo {
+    FramebufferInfo {
         addr: fb.addr,
         width: fb.width,
         height: fb.height,
@@ -238,10 +248,10 @@ fn parse_framebuffer_info(header: *const u32, info: &mut BootloaderInfo) {
         green_mask_sz: fb.green_mask_sz,
         blue_pos: fb.blue_pos,
         blue_mask_sz: fb.blue_mask_sz,
-    };
+    }
 }
 
-fn parse_elf_sections(header: *const u32, info: &mut BootloaderInfo) {
+fn parse_elf_sections(header: *const u32) -> SectionInfo {
     // The diagram in the documentation states that fields num, entsize and shndx are u16, but it is
     // clearly outdated, as even the code in that same page declares that fields are, in fact, u32.
 
@@ -260,22 +270,20 @@ fn parse_elf_sections(header: *const u32, info: &mut BootloaderInfo) {
         let shstrtab_idx = header.offset(4).read() as usize;
         let shdrs = header.offset(5).cast::<Elf64Shdr>();
 
-        let sect_info = SectionInfo {
+        SectionInfo {
             num_shdrs,
             shdrs,
             shstrtab_idx,
-        };
-
-        info.section_headers = Some(sect_info);
+        }
     }
 }
 
 fn remove_reserved_areas(info: &mut BootloaderInfo) {
-    if info.memory_map.is_none() || info.section_headers.is_none() {
-        panic!("Systems using Multiboot require both memory mapping and kernel section tags to be present");
+    if info.section_headers.is_none() {
+        panic!("Systems using Multiboot require kernel section headers tag to be present");
     }
 
-    let mmap = info.memory_map.as_mut().unwrap();
+    let mmap = &mut info.memory_map;
     let shdrs = &info.section_headers.as_ref().unwrap();
     let fb = &info.framebuffer;
     let fb_addr = fb.addr as usize;
