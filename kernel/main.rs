@@ -15,7 +15,7 @@
 mod printk;
 
 #[macro_use]
-mod utils;
+mod debug;
 
 #[cfg(target_arch = "x86_64")]
 #[path = "arch/x64/mod.rs"]
@@ -30,6 +30,7 @@ mod mm;
 mod panic;
 mod serial;
 mod spinlock;
+mod units;
 
 #[no_mangle]
 pub extern "C" fn kmain() {
