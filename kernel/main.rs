@@ -6,7 +6,6 @@
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 #![allow(clippy::identity_op)]
-#![allow(clippy::match_single_binding)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_mut_refs)]
 #![feature(fn_traits)]

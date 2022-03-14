@@ -54,7 +54,7 @@ pub fn do_println(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bo
                 (SERIAL_LOCK.guard(), CONSOLE.guard())
             };
 
-            write(&mut *serial, &args, newline);
+            write(&mut *serial, args, newline);
 
             if let Some(console) = cons_cell.get_mut() {
                 write(console, args, newline);
