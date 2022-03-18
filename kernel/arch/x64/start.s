@@ -151,32 +151,34 @@ check_long_mode:
 	jmp initspin
 
 map_pages:
-%define Addr (1 << 21)
+%define Addr (1 << 21) ; 1 MiB
 %define Huge (1 << 7)
 %define WrPr (1 << 1) | (1 << 0) ; Writable and present
+	; Identity mapping: 0x0..0x400000 -> 0x0..0x400000; 2 entries, 2 MiB each.
 	; pml4[0] -> pdpt
 	mov eax, RELOC(pdpt)
 	or eax, WrPr
 	mov [RELOC(pml4)], eax
-
-	; pml4[511] -> pdpt
-	mov eax, RELOC(pdpt)
-	or eax, WrPr
-	mov [RELOC(pml4) + 511 * 8], eax
 
 	; pdpt[0] -> pd
 	mov eax, RELOC(pd)
 	or eax, WrPr
 	mov [RELOC(pdpt)], eax
 
+	; pd[0], pd[1] -> 0x00000000..0x00400000
+	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
+
+	; Kernel higher half mapping: 0xffffffff80000000..0xffffffff80400000 -> 0x0..0x400000
+	; pml4[511] -> pdpt
+	mov eax, RELOC(pdpt)
+	or eax, WrPr
+	mov [RELOC(pml4) + 511 * 8], eax
+
 	; pdpt[510] -> pd, map at -2 GiB
 	mov eax, RELOC(pd)
 	or eax, WrPr
 	mov [RELOC(pdpt) + 510 * 8], eax
-
-	; pd -> 0x00000000 - 0x00400000, identity mapping. 2 entries, 2 MiB each
-	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
-	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
 
 	; Temporary identity mapping for framebuffer: 0xfd000000..0xfdc00000
 	; pdpt[3] -> pd_fb
