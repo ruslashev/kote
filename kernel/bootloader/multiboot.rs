@@ -87,7 +87,7 @@ fn parse() -> BootloaderInfo {
     }
 
     let mut info = BootloaderInfo {
-        memory_map: mmap.unwrap_or_else(|| panic_no_graphics("Multiboot: mmap tag not found")),
+        free_areas: mmap.unwrap_or_else(|| panic_no_graphics("Multiboot: mmap tag not found")),
         framebuffer: fb
             .unwrap_or_else(|| panic_no_graphics("Multiboot: framebuffer tag not found")),
         section_headers: shdrs,
@@ -129,6 +129,8 @@ fn parse_mem_map(header: *const u32) -> MemoryMap {
      * bootloader and must be ignored by the OS image.
      */
 
+    const ET_AVAILABLE: u32 = 1;
+
     #[repr(C, packed)]
     struct Entry {
         base_addr: u64,
@@ -161,8 +163,7 @@ fn parse_mem_map(header: *const u32) -> MemoryMap {
             panic_no_graphics("Multiboot: mmap entry overflow");
         }
 
-        // Available
-        if entry.etype == 1 {
+        if entry.etype == ET_AVAILABLE {
             mmap[mmap_entry] = Region { start, end };
             mmap_entry += 1;
         }
@@ -283,7 +284,7 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
         panic!("Systems using Multiboot require kernel section headers tag to be present");
     }
 
-    let mmap = &mut info.memory_map;
+    let mmap = &mut info.free_areas;
     let shdrs = &info.section_headers.as_ref().unwrap();
     let fb = &info.framebuffer;
     let fb_addr = fb.addr as usize;

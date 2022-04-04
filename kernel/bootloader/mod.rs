@@ -17,7 +17,7 @@ trait Bootloader {
 }
 
 pub struct BootloaderInfo {
-    pub memory_map: MemoryMap,
+    pub free_areas: MemoryMap,
     pub framebuffer: FramebufferInfo,
     pub section_headers: Option<SectionInfo>,
 }

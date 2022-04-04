@@ -45,7 +45,7 @@ pub extern "C" fn kmain() {
     println!("Booting ree...");
 
     println!("Available memory:");
-    print!("{}", &info.memory_map);
+    print!("{}", &info.free_areas);
 
     println!("Kernel sections:");
     print!("{}", info.section_headers.as_ref().unwrap());
