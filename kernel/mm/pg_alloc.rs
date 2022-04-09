@@ -4,7 +4,7 @@
 
 use core::mem::size_of;
 
-use crate::arch::mm::mmu;
+use crate::arch::mmu;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
 use crate::consts::{KERNEL_BASE, PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::mm::addr::VirtAddr;

@@ -9,6 +9,6 @@ use crate::arch;
 use crate::bootloader::BootloaderInfo;
 
 pub fn init(info: &BootloaderInfo) {
-    arch::mm::init();
+    arch::mmu::init();
     pg_alloc::init(info);
 }

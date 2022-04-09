@@ -6,5 +6,5 @@
 mod asm;
 pub mod backtrace;
 pub mod interrupts;
-pub mod mm;
+pub mod mmu;
 pub mod uart;
