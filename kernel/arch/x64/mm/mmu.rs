@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use crate::mm::addr::VirtAddr;
 use crate::spinlock::SpinlockMutex;
 
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
@@ -69,4 +70,56 @@ pub fn init() {
     }
 
     *ROOT_DIR.guard().data = PML4::from_addr(unsafe { pml4 });
+}
+
+#[derive(Debug)]
+pub struct PageFrames4K {
+    pml4_o: u64,
+    pdpt_o: u64,
+    pd_off: u64,
+    pt_off: u64,
+    offset: u64,
+}
+
+#[derive(Debug)]
+pub struct PageFrames2M {
+    pml4_o: u64,
+    pdpt_o: u64,
+    pd_off: u64,
+    offset: u64,
+}
+
+trait ToFrames {
+    fn to_4k_page_frames(&self) -> PageFrames4K;
+    fn to_2m_page_frames(&self) -> PageFrames2M;
+}
+
+impl ToFrames for VirtAddr {
+    fn to_4k_page_frames(&self) -> PageFrames4K {
+        let addr: u64 = self.0.try_into().unwrap();
+
+        PageFrames4K {
+            pml4_o: (addr & 0xff8000000000) >> 39,
+            pdpt_o: (addr & 0x007fc0000000) >> 30,
+            pd_off: (addr & 0x00003fe00000) >> 21,
+            pt_off: (addr & 0x0000001ff000) >> 12,
+            offset: (addr & 0x000000000fff) >> 0,
+        }
+    }
+
+    fn to_2m_page_frames(&self) -> PageFrames2M {
+        let addr: u64 = self.0.try_into().unwrap();
+
+        PageFrames2M {
+            pml4_o: (addr & 0xff8000000000) >> 39,
+            pdpt_o: (addr & 0x007fc0000000) >> 30,
+            pd_off: (addr & 0x00003fe00000) >> 21,
+            offset: (addr & 0x0000001fffff) >> 0,
+        }
+    }
+}
+
+pub fn map(from: VirtAddr, to: VirtAddr) {
+    println!("map {} {}", from, to);
+    println!("{:?}", from.to_2m_page_frames());
 }

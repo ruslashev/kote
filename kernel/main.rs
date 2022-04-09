@@ -9,6 +9,7 @@
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_mut_refs)]
 #![feature(fn_traits)]
+#![feature(int_roundings)]
 #![feature(once_cell)]
 
 #[macro_use]
@@ -38,7 +39,7 @@ pub extern "C" fn kmain() {
     let info = bootloader::get_info();
     console::init(&info);
     arch::interrupts::init();
-    mm::init();
+    mm::init(&info);
 
     arch::interrupts::enable();
 

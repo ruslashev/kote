@@ -63,7 +63,7 @@ pub struct SectionInfoIterator<'a> {
 }
 
 impl<'i> SectionInfoIterator<'i> {
-    fn from_info(info: &'i SectionInfo) -> Self {
+    pub fn from_info(info: &'i SectionInfo) -> Self {
         let shstrtab = unsafe {
             let idx = info.shstrtab_idx;
             let shdr = info.shdrs.add(idx).read();

@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 pub const PAGE_SIZE: u64 = 4096;
+pub const PAGE_SIZE_LARGE: u64 = 2 * 1024 * 1024; // 2 MiB
 
 pub const KERNEL_BASE: u64 = 0xffffffff80000000;
 
