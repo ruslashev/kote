@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::mm::addr::VirtAddr;
+use crate::mm::addr::{Address, PhysAddr, VirtAddr};
 use crate::spinlock::SpinlockMutex;
 
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
@@ -89,7 +89,7 @@ pub struct PageFrames2M {
     offset: u64,
 }
 
-trait ToFrames {
+trait ToFrames: Address {
     fn to_4k_page_frames(&self) -> PageFrames4K;
     fn to_2m_page_frames(&self) -> PageFrames2M;
 }
@@ -119,7 +119,7 @@ impl ToFrames for VirtAddr {
     }
 }
 
-pub fn map(from: VirtAddr, to: VirtAddr) {
+pub fn map(from: VirtAddr, to: PhysAddr) {
     println!("map {} {}", from, to);
     println!("{:?}", from.to_2m_page_frames());
 }

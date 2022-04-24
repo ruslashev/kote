@@ -7,7 +7,7 @@ use core::mem::size_of;
 use crate::arch::mmu;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
 use crate::consts::{KERNEL_BASE, PAGE_SIZE, PAGE_SIZE_LARGE};
-use crate::mm::addr::VirtAddr;
+use crate::mm::addr::{Address, PhysAddr, VirtAddr};
 use crate::units::po2_round_up;
 
 #[repr(packed)]
@@ -28,7 +28,7 @@ pub fn init(info: &BootloaderInfo) {
         let phys = page_start;
         let virt = phys + KERNEL_BASE;
 
-        mmu::map(VirtAddr::from_u64(virt), VirtAddr::from_u64(phys));
+        mmu::map(VirtAddr::from_u64(virt), PhysAddr::from_u64(phys));
 
         page_start += PAGE_SIZE_LARGE;
     }
