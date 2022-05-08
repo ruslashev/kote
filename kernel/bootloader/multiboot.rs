@@ -280,9 +280,10 @@ fn parse_elf_sections(header: *const u32) -> SectionInfo {
 }
 
 fn remove_reserved_areas(info: &mut BootloaderInfo) {
-    if info.section_headers.is_none() {
-        panic!("Systems using Multiboot require kernel section headers tag to be present");
-    }
+    assert!(
+        info.section_headers.is_some(),
+        "Systems using Multiboot require kernel section headers tag to be present"
+    );
 
     let mmap = &mut info.free_areas;
     let shdrs = &info.section_headers.as_ref().unwrap();

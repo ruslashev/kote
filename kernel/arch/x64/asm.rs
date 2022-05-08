@@ -5,7 +5,7 @@
 use core::arch::asm;
 
 pub mod io {
-    use super::*;
+    use super::asm;
 
     #[inline(always)]
     pub fn outb(port: u16, val: u8) {

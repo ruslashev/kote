@@ -4,10 +4,10 @@
 
 use core::fmt;
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct PhysAddr(pub usize);
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct VirtAddr(pub usize);
 
 pub trait Address: From<usize> {

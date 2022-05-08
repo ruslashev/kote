@@ -155,7 +155,7 @@ pub fn load() {
     unsafe {
         let idtr = IDTDescriptor {
             size: 256 * core::mem::size_of::<IDTEntry>() as u16 - 1,
-            addr: &IDT as *const _ as u64,
+            addr: core::ptr::addr_of!(IDT) as u64,
         };
 
         asm!("lidt [{}]",
