@@ -26,13 +26,13 @@ pub struct Console {
 }
 
 impl Console {
-    fn from_info(info: &BootloaderInfo) -> Self {
+    fn new(fb_addr: usize, info: &BootloaderInfo) -> Self {
         let font = Font::from_bytes(FONT);
         let width = 1024 / font.width;
         let height = 768 / font.height as u32;
 
         Console {
-            fb: Framebuffer::from_info(info),
+            fb: Framebuffer::new(fb_addr, info),
             font,
             cursor_x: 0,
             cursor_y: 0,
@@ -107,11 +107,11 @@ struct Framebuffer {
 }
 
 impl Framebuffer {
-    fn from_info(info: &BootloaderInfo) -> Self {
+    fn new(fb_addr: usize, info: &BootloaderInfo) -> Self {
         let fb = &info.framebuffer;
 
         Framebuffer {
-            addr: usize::try_from(fb.addr).unwrap(),
+            addr: fb_addr,
             width: fb.width,
             height: fb.height,
             pitch: fb.pitch,
@@ -168,9 +168,9 @@ impl Font {
     }
 }
 
-pub fn init(info: &BootloaderInfo) {
+pub fn init(fb_addr: usize, info: &BootloaderInfo) {
     let cell = CONSOLE.guard();
-    cell.set(Console::from_info(info)).unwrap();
+    cell.set(Console::new(fb_addr, info)).unwrap();
 }
 
 const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {

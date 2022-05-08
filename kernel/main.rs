@@ -36,9 +36,10 @@ mod units;
 pub extern "C" fn kmain() {
     serial::init();
     let info = bootloader::get_info();
-    console::init(&info);
     arch::interrupts::init();
-    mm::init(&info);
+    let fb_addr = mm::init(&info);
+
+    console::init(fb_addr, &info);
 
     arch::interrupts::enable();
 

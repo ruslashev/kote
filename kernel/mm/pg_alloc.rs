@@ -16,12 +16,13 @@ struct PageInfo<'a> {
     refc: u16,
 }
 
-pub fn init(info: &BootloaderInfo) {
+pub fn init(info: &BootloaderInfo) -> u64 {
     let (start, size) = get_page_infos_region(info);
+    let end = KERNEL_BASE + start + size;
 
-    println_serial!("start={:#x}, size={:#x}", start, size);
+    mmu::map_early_region(start, size, KERNEL_BASE);
 
-    mmu::map_page_infos_region(start, size);
+    end
 }
 
 fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
