@@ -5,6 +5,29 @@
 use crate::mm::addr::{Address, PhysAddr, VirtAddr};
 use crate::spinlock::SpinlockMutex;
 
+pub const PAGE_SIZE: u64 = 4096;
+pub const PAGE_SIZE_LARGE: u64 = 2 * 1024 * 1024; // 2 MiB
+
+/* Memory layout:
+ * ┌───────────────────────────────┐ 0xffffffffffffffff
+ * │                               │
+ * │                               │
+ * │  Identity mapping for kernel  │ 0xffffffff80000000 KERNEL_BASE
+ * ├───────────────────────────────┤
+ * │   Page allocation structures  │
+ * ├───────────────────────────────┤
+ * │      Framebuffer mapping      │
+ * ├───────────────────────────────┤
+ * │                               │
+ * │          Kernel heap          │
+ *
+ * ╵               .               ╵
+ * ╵               .               ╵
+ *
+ * │                               │
+ * └───────────────────────────────┘
+ */
+
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
 const ENTRIES: usize = 512;
 

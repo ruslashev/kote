@@ -24,7 +24,6 @@ mod arch;
 
 mod bootloader;
 mod console;
-mod consts;
 mod dwarf;
 mod elf;
 mod mm;

@@ -8,3 +8,5 @@ pub mod backtrace;
 pub mod interrupts;
 pub mod mmu;
 pub mod uart;
+
+pub const KERNEL_BASE: u64 = 0xffffffff80000000;

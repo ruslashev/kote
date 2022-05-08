@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::consts::PAGE_SIZE;
+use crate::arch::mmu::PAGE_SIZE;
 
 #[inline(always)]
 pub fn is_page_aligned(value: u64) -> bool {

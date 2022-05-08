@@ -5,8 +5,9 @@
 use core::mem::size_of;
 
 use crate::arch::mmu;
+use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
+use crate::arch::KERNEL_BASE;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
-use crate::consts::{KERNEL_BASE, PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::mm::addr::{Address, PhysAddr, VirtAddr};
 use crate::units::po2_round_up;
 
