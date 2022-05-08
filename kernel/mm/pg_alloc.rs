@@ -8,7 +8,7 @@ use crate::arch::mmu;
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::arch::KERNEL_BASE;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
-use crate::units::po2_round_up;
+use crate::units::PowerOfTwoOps;
 
 #[repr(packed)]
 struct PageInfo<'a> {
@@ -27,13 +27,13 @@ pub fn init(info: &BootloaderInfo) -> u64 {
 
 fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
     let kernel_end = get_kernel_end(info);
-    let alloc_start = po2_round_up(kernel_end, PAGE_SIZE_LARGE);
+    let alloc_start = kernel_end.lpage_round_up();
 
     let mmap = &info.free_areas;
     let max_addr = mmap.entries[mmap.num_entries - 1].end;
     let maxpages = max_addr.div_ceil(PAGE_SIZE as usize);
     let page_infos_bytes = maxpages * size_of::<PageInfo>();
-    let page_infos_rounded = po2_round_up(page_infos_bytes as u64, PAGE_SIZE_LARGE);
+    let page_infos_rounded = (page_infos_bytes as u64).lpage_round_up();
 
     (alloc_start, page_infos_rounded)
 }

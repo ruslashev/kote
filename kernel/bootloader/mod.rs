@@ -8,7 +8,7 @@ use core::fmt;
 use core::{slice, str};
 
 use crate::elf::Elf64Shdr;
-use crate::units;
+use crate::units::PowerOfTwoOps;
 
 const MMAP_MAX_ENTRIES: usize = 32;
 
@@ -136,8 +136,8 @@ impl fmt::Display for MemoryMap {
         for idx in 0..self.num_entries {
             let Region { start, end } = self.entries[idx];
 
-            let pg_start = units::page_round_down(start as u64);
-            let pg_end = units::page_round_up(end as u64);
+            let pg_start = start.page_round_down();
+            let pg_end = end.page_round_up();
             npages += (pg_end - pg_start) / 4096;
 
             writeln!(f, "{:x}..{:<16x}", start, end)?;

@@ -11,7 +11,7 @@ use core::ops::Range;
 use super::*;
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
-use crate::units;
+use crate::units::PowerOfTwoOps;
 
 extern "C" {
     static mb_info: u64;
@@ -56,7 +56,7 @@ fn parse() -> BootloaderInfo {
     let mut start = unsafe { mb_info };
     let alignment = 8;
 
-    if !units::is_po2_aligned(start, alignment) {
+    if !start.is_po2_aligned(alignment) {
         panic_no_graphics("Multiboot information structure is not aligned");
     }
 
@@ -71,8 +71,8 @@ fn parse() -> BootloaderInfo {
     while total_size > 0 {
         let header = start as *const u32;
         let tag_type = unsafe { header.read() };
-        let tag_size = unsafe { header.offset(1).read() };
-        let aligned_size = units::po2_round_up(tag_size as u64, alignment);
+        let tag_size = unsafe { header.offset(1).read() } as u64;
+        let aligned_size = tag_size.po2_round_up(alignment);
 
         match tag_type {
             0 => break,
