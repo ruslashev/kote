@@ -25,6 +25,19 @@ pub fn init(info: &BootloaderInfo) {
 }
 
 fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
+    let kernel_end = get_kernel_end(info);
+    let alloc_start = po2_round_up(kernel_end, PAGE_SIZE_LARGE);
+
+    let mmap = &info.free_areas;
+    let max_addr = mmap.entries[mmap.num_entries - 1].end;
+    let maxpages = max_addr.div_ceil(PAGE_SIZE as usize);
+    let page_infos_bytes = maxpages * size_of::<PageInfo>();
+    let page_infos_rounded = po2_round_up(page_infos_bytes as u64, PAGE_SIZE_LARGE);
+
+    (alloc_start, page_infos_rounded)
+}
+
+fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     let mut kernel_end = 0;
 
     for (_, &shdr) in SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()) {
@@ -39,13 +52,5 @@ fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
         }
     }
 
-    let alloc_start = po2_round_up(kernel_end, PAGE_SIZE_LARGE);
-
-    let mmap = &info.free_areas;
-    let max_addr = mmap.entries[mmap.num_entries - 1].end;
-    let maxpages = max_addr.div_ceil(PAGE_SIZE as usize);
-    let page_infos_bytes = maxpages * size_of::<PageInfo>();
-    let page_infos_rounded = po2_round_up(page_infos_bytes as u64, PAGE_SIZE_LARGE);
-
-    (alloc_start, page_infos_rounded)
+    kernel_end
 }
