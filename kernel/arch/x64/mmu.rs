@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::mm::addr::{Address, PhysAddr, VirtAddr};
+use super::KERNEL_BASE;
+use crate::mm::addr::{Address, VirtAddr};
 use crate::spinlock::SpinlockMutex;
 
 pub const PAGE_SIZE: u64 = 4096;
@@ -30,6 +31,10 @@ pub const PAGE_SIZE_LARGE: u64 = 2 * 1024 * 1024; // 2 MiB
 
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
 const ENTRIES: usize = 512;
+
+const PRESENT: u64 = 1 << 0;
+const READWRITE: u64 = 1 << 1;
+const HUGE: u64 = 1 << 7;
 
 static ROOT_DIR: SpinlockMutex<PML4> = SpinlockMutex::new(PML4::empty());
 
@@ -142,7 +147,21 @@ impl ToFrames for VirtAddr {
     }
 }
 
-pub fn map(from: VirtAddr, to: PhysAddr) {
-    println!("map {} {}", from, to);
-    println!("{:?}", from.to_2m_page_frames());
+pub fn map_page_infos_region(start: u64, size: u64) {
+    extern "C" {
+        fn pd();
+    }
+
+    let pd_ptr = pd as *mut u64;
+    let large = PAGE_SIZE_LARGE;
+
+    for phys in (start..start + size).step_by(PAGE_SIZE_LARGE as usize) {
+        let virt = phys + KERNEL_BASE;
+        let virt = VirtAddr::from_u64(virt);
+        let frames = virt.to_2m_page_frames();
+
+        unsafe {
+            *pd_ptr.add(frames.pd_off as usize) = (phys / large) | HUGE | READWRITE | PRESENT;
+        }
+    }
 }

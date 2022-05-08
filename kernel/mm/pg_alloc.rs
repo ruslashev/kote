@@ -8,7 +8,6 @@ use crate::arch::mmu;
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::arch::KERNEL_BASE;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
-use crate::mm::addr::{Address, PhysAddr, VirtAddr};
 use crate::units::po2_round_up;
 
 #[repr(packed)]
@@ -20,19 +19,9 @@ struct PageInfo<'a> {
 pub fn init(info: &BootloaderInfo) {
     let (start, size) = get_page_infos_region(info);
 
-    println!("start={:#x}, size={:#x}", start, size);
+    println_serial!("start={:#x}, size={:#x}", start, size);
 
-    let num_largepages = size / PAGE_SIZE_LARGE;
-    let mut page_start = start;
-
-    for _ in 0..num_largepages {
-        let phys = page_start;
-        let virt = phys + KERNEL_BASE;
-
-        mmu::map(VirtAddr::from_u64(virt), PhysAddr::from_u64(phys));
-
-        page_start += PAGE_SIZE_LARGE;
-    }
+    mmu::map_page_infos_region(start, size);
 }
 
 fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {

@@ -169,9 +169,12 @@ impl fmt::Display for ExceptionFrame {
         let mut backtrace = Backtrace::from_rbp(rbp).into_iter().enumerate().peekable();
 
         writeln!(f, "Backtrace:")?;
+
+        // Last write statement must not include newline
         if backtrace.peek().is_none() {
             write!(f, " 1) {:#x}", rip)?;
         } else {
+            writeln!(f, " 1) {:#x}", rip)?;
             while let Some((i, addr)) = backtrace.next() {
                 if backtrace.peek().is_some() {
                     writeln!(f, "{:>2}) {:#x}", i + 2, addr)?;
