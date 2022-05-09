@@ -4,9 +4,10 @@
 
 use crate::mm::addr::{Address, VirtAddr};
 use crate::spinlock::SpinlockMutex;
+use crate::units::{Bytes, KiB, MiB};
 
-pub const PAGE_SIZE: u64 = 4096;
-pub const PAGE_SIZE_LARGE: u64 = 2 * 1024 * 1024; // 2 MiB
+pub const PAGE_SIZE: usize = KiB(4).to_bytes();
+pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
 
 /* Memory layout:
  * ┌───────────────────────────────┐ 0xffffffffffffffff
@@ -162,7 +163,7 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
 
     let pd_ptr = pd as *mut u64;
 
-    for phys in (start..start + size).step_by(PAGE_SIZE_LARGE as usize) {
+    for phys in (start..start + size).step_by(PAGE_SIZE_LARGE) {
         let virt = phys + offset_for_virt;
         let virt = VirtAddr::from_u64(virt);
         let frames = virt.to_2m_page_frames();

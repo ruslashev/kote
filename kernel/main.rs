@@ -8,6 +8,7 @@
 #![allow(clippy::identity_op)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_mut_refs)]
+#![feature(const_trait_impl)]
 #![feature(fn_traits)]
 #![feature(int_roundings)]
 #![feature(once_cell)]

@@ -57,3 +57,31 @@ impl PowerOfTwoOps for $type {
 }
 
 impl_po2_ops!(u32 u64 usize);
+
+pub trait Bytes: Sized {
+    fn to_bytes(self) -> usize;
+}
+
+pub struct KiB(pub usize);
+
+pub struct MiB(pub usize);
+
+pub struct GiB(pub usize);
+
+impl const Bytes for KiB {
+    fn to_bytes(self) -> usize {
+        self.0 * 1024
+    }
+}
+
+impl const Bytes for MiB {
+    fn to_bytes(self) -> usize {
+        self.0 * 1024 * 1024
+    }
+}
+
+impl const Bytes for GiB {
+    fn to_bytes(self) -> usize {
+        self.0 * 1024 * 1024 * 1024
+    }
+}

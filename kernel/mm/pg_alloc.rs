@@ -5,7 +5,6 @@
 use core::mem::size_of;
 
 use crate::arch::mmu;
-use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::arch::KERNEL_BASE;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
 use crate::units::PowerOfTwoOps;
@@ -31,7 +30,7 @@ fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
 
     let mmap = &info.free_areas;
     let max_addr = mmap.entries[mmap.num_entries - 1].end;
-    let maxpages = max_addr.div_ceil(PAGE_SIZE as usize);
+    let maxpages = max_addr.div_ceil(mmu::PAGE_SIZE);
     let page_infos_bytes = maxpages * size_of::<PageInfo>();
     let page_infos_rounded = (page_infos_bytes as u64).lpage_round_up();
 
