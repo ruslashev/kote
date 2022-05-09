@@ -31,7 +31,7 @@ mod mm;
 mod panic;
 mod serial;
 mod spinlock;
-mod units;
+mod types;
 
 #[no_mangle]
 pub extern "C" fn kmain() {

@@ -8,7 +8,7 @@ use core::fmt;
 use core::{slice, str};
 
 use crate::elf::Elf64Shdr;
-use crate::units::PowerOfTwoOps;
+use crate::types::PowerOfTwoOps;
 
 const MMAP_MAX_ENTRIES: usize = 32;
 

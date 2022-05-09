@@ -11,7 +11,7 @@ use core::ops::Range;
 use super::*;
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
-use crate::units::PowerOfTwoOps;
+use crate::types::PowerOfTwoOps;
 
 extern "C" {
     static mb_info: u64;

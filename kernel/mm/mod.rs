@@ -7,7 +7,7 @@ mod pg_alloc;
 
 use crate::arch;
 use crate::bootloader::BootloaderInfo;
-use crate::units::PowerOfTwoOps;
+use crate::types::PowerOfTwoOps;
 
 pub fn init(info: &BootloaderInfo) -> usize {
     arch::mmu::init();

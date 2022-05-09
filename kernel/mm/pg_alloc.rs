@@ -7,7 +7,7 @@ use core::mem::size_of;
 use crate::arch::mmu;
 use crate::arch::KERNEL_BASE;
 use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
-use crate::units::PowerOfTwoOps;
+use crate::types::PowerOfTwoOps;
 
 #[repr(packed)]
 struct PageInfo<'a> {

@@ -4,7 +4,7 @@
 
 use crate::mm::addr::{Address, VirtAddr};
 use crate::spinlock::SpinlockMutex;
-use crate::units::{Bytes, KiB, MiB};
+use crate::types::{Bytes, KiB, MiB};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
