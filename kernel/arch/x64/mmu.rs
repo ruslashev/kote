@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::mm::addr::{Address, VirtAddr};
 use crate::spinlock::SpinlockMutex;
-use crate::types::{Bytes, KiB, MiB};
+use crate::types::{Address, Bytes, KiB, MiB, VirtAddr};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
@@ -117,7 +116,7 @@ pub struct PageFrames2M {
     offset: u64,
 }
 
-trait ToFrames: Address {
+trait ToFrames {
     fn to_4k_page_frames(&self) -> PageFrames4K;
     fn to_2m_page_frames(&self) -> PageFrames2M;
 }
