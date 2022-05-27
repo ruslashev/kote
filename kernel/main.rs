@@ -16,9 +16,6 @@
 #[macro_use]
 mod printk;
 
-#[macro_use]
-mod debug;
-
 #[cfg(target_arch = "x86_64")]
 #[path = "arch/x64/mod.rs"]
 mod arch;
