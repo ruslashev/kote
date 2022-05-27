@@ -28,8 +28,8 @@ pub struct Console {
 impl Console {
     fn new(fb_addr: usize, info: &BootloaderInfo) -> Self {
         let font = Font::from_bytes(FONT);
-        let width = 1024 / font.width;
-        let height = 768 / font.height as u32;
+        let width = info.framebuffer.width / font.width;
+        let height = info.framebuffer.height / font.height as u32;
 
         Console {
             fb: Framebuffer::new(fb_addr, info),
@@ -77,10 +77,10 @@ impl Console {
 
     fn shift_up(&mut self) {
         let bpp = self.fb.bytes_per_pixel as usize;
-        let width = (self.width * self.font.width) as usize * bpp;
-        let src = (self.fb.addr + width * self.font.height) as *const u8;
+        let row = bpp * (self.width * self.font.width) as usize;
+        let src = (self.fb.addr + row * self.font.height) as *const u8;
         let dst = self.fb.addr as *mut u8;
-        let cnt = width * (self.fb.height as usize - self.font.height) * bpp;
+        let cnt = row * (self.fb.height as usize - self.font.height);
 
         unsafe {
             core::ptr::copy(src, dst, cnt);

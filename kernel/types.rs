@@ -6,7 +6,7 @@ use core::fmt;
 
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
 
-pub trait PowerOfTwoOps {
+pub trait PowerOfTwoOps: Copy {
     fn is_po2_aligned(self, po2: Self) -> bool;
     fn po2_round_down(self, po2: Self) -> Self;
     fn po2_round_up(self, po2: Self) -> Self;
