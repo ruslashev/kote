@@ -153,11 +153,12 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
     }
 
     println_serial!(
-        "Early map {:#x}..{:#x} -> {:#x}..{:#x}",
+        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large pages)",
         offset_for_virt + start,
         offset_for_virt + start + size,
         start,
-        start + size
+        start + size,
+        size / PAGE_SIZE_LARGE as u64
     );
 
     let pd_ptr = pd as *mut u64;

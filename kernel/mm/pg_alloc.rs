@@ -6,25 +6,63 @@ use core::mem::size_of;
 
 use crate::arch::mmu;
 use crate::arch::KERNEL_BASE;
-use crate::bootloader::{BootloaderInfo, SectionInfoIterator};
+use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
 use crate::types::PowerOfTwoOps;
 
-#[repr(packed)]
+static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
+static mut FREE_PAGES: Option<&PageInfo> = None;
+static mut FREE_PAGES_END: Option<&PageInfo> = None;
+
+#[derive(Default)]
 struct PageInfo<'a> {
     next: Option<&'a PageInfo<'a>>,
     refc: u16,
 }
 
 pub fn init(info: &BootloaderInfo) -> u64 {
-    let (start, size) = get_page_infos_region(info);
+    init_page_infos(info)
+}
+
+fn init_page_infos(info: &BootloaderInfo) -> u64 {
+    let (maxpages, start, size) = get_page_infos_region(info);
     let end = KERNEL_BASE + start + size;
 
     mmu::map_early_region(start, size, KERNEL_BASE);
 
+    unsafe {
+        PAGE_INFOS = core::slice::from_raw_parts_mut(start as *mut PageInfo, maxpages);
+        PAGE_INFOS.fill_with(Default::default); // mark all as non-free
+
+        FREE_PAGES = None;
+        FREE_PAGES_END = Some(&PAGE_INFOS[1]);
+    }
+
+    println_serial!("Initializing page information list...");
+
+    let mmap = &info.free_areas;
+    for eidx in 0..mmap.num_entries {
+        let Region { start, end } = mmap.entries[eidx];
+        let pg_start = start.page_round_down();
+        let pg_end = end.page_round_up();
+
+        for pg in (pg_start..pg_end).into_iter().step_by(mmu::PAGE_SIZE) {
+            let index = pg / mmu::PAGE_SIZE;
+
+            unsafe {
+                if PAGE_INFOS[index].next.is_some() {
+                    continue;
+                }
+
+                PAGE_INFOS[index].next = FREE_PAGES;
+                FREE_PAGES = Some(&PAGE_INFOS[index]);
+            }
+        }
+    }
+
     end
 }
 
-fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
+fn get_page_infos_region(info: &BootloaderInfo) -> (usize, u64, u64) {
     let kernel_end = get_kernel_end(info);
     let alloc_start = kernel_end.lpage_round_up();
 
@@ -34,7 +72,7 @@ fn get_page_infos_region(info: &BootloaderInfo) -> (u64, u64) {
     let page_infos_bytes = maxpages * size_of::<PageInfo>();
     let page_infos_rounded = (page_infos_bytes as u64).lpage_round_up();
 
-    (alloc_start, page_infos_rounded)
+    (maxpages, alloc_start, page_infos_rounded)
 }
 
 fn get_kernel_end(info: &BootloaderInfo) -> u64 {
