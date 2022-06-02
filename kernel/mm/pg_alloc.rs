@@ -3,20 +3,31 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use core::mem::size_of;
+use core::ptr::{addr_of, NonNull};
 
-use crate::arch::mmu;
-use crate::arch::KERNEL_BASE;
+use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
-use crate::types::PowerOfTwoOps;
+use crate::types::{PhysAddr, PowerOfTwoOps};
 
 static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
-static mut FREE_PAGES: Option<&PageInfo> = None;
-static mut FREE_PAGES_END: Option<&PageInfo> = None;
+static mut FREE_PAGES: Option<NonNull<PageInfo>> = None;
 
 #[derive(Default)]
-struct PageInfo<'a> {
-    next: Option<&'a PageInfo<'a>>,
+struct PageInfo {
+    next: Option<NonNull<PageInfo>>,
     refc: u16,
+}
+
+impl PageInfo {
+    unsafe fn to_physaddr(&self) -> PhysAddr {
+        let base = addr_of!(PAGE_INFOS) as usize;
+        let this = addr_of!(self) as usize;
+        let offset = this - base;
+        let index = offset / size_of::<PageInfo>();
+        let addr = index * mmu::PAGE_SIZE;
+
+        PhysAddr::from(addr)
+    }
 }
 
 pub fn init(info: &BootloaderInfo) -> u64 {
@@ -34,7 +45,6 @@ fn init_page_infos(info: &BootloaderInfo) -> u64 {
         PAGE_INFOS.fill_with(Default::default); // mark all as non-free
 
         FREE_PAGES = None;
-        FREE_PAGES_END = Some(&PAGE_INFOS[1]);
     }
 
     println_serial!("Initializing page information list...");
@@ -54,7 +64,7 @@ fn init_page_infos(info: &BootloaderInfo) -> u64 {
                 }
 
                 PAGE_INFOS[index].next = FREE_PAGES;
-                FREE_PAGES = Some(&PAGE_INFOS[index]);
+                FREE_PAGES = Some(NonNull::new_unchecked(&mut PAGE_INFOS[index] as *mut _));
             }
         }
     }
@@ -91,4 +101,33 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     }
 
     kernel_end
+}
+
+unsafe fn alloc_page() -> Option<&'static mut PageInfo> {
+    match FREE_PAGES {
+        Some(mut head) => {
+            let pgref = head.as_mut();
+            let vaddr = pgref.to_physaddr().into_vaddr();
+            let region = vaddr.into_slice_mut(mmu::PAGE_SIZE);
+
+            region.fill(0);
+
+            FREE_PAGES = pgref.next;
+
+            pgref.next = None;
+
+            Some(pgref)
+        }
+        None => None,
+    }
+}
+
+unsafe fn free_page(page: &'static mut PageInfo) {
+    if page.refc != 0 {
+        panic!("free_page: page is used");
+    }
+
+    page.next = FREE_PAGES;
+
+    FREE_PAGES = Some(NonNull::new_unchecked(page as *mut _));
 }

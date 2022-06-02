@@ -5,6 +5,7 @@
 use core::fmt;
 
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
+use crate::arch::KERNEL_BASE;
 
 pub trait PowerOfTwoOps: Copy {
     fn is_po2_aligned(self, po2: Self) -> bool;
@@ -129,5 +130,23 @@ impl fmt::Display for PhysAddr {
 impl fmt::Display for VirtAddr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:x?}", &self)
+    }
+}
+
+impl From<PhysAddr> for VirtAddr {
+    fn from(paddr: PhysAddr) -> Self {
+        VirtAddr::from(paddr.0 + KERNEL_BASE as usize)
+    }
+}
+
+impl PhysAddr {
+    pub fn into_vaddr(self) -> VirtAddr {
+        self.into()
+    }
+}
+
+impl VirtAddr {
+    pub unsafe fn into_slice_mut<'a>(self, size: usize) -> &'a mut [u8] {
+        core::slice::from_raw_parts_mut(self.0 as *mut u8, size)
     }
 }
