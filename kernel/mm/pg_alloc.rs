@@ -19,6 +19,35 @@ struct PageInfo {
 }
 
 impl PageInfo {
+    unsafe fn alloc() -> Option<&'static mut PageInfo> {
+        match FREE_PAGES {
+            Some(mut head) => {
+                let pgref = head.as_mut();
+                let vaddr = pgref.to_physaddr().into_vaddr();
+                let region = vaddr.into_slice_mut(mmu::PAGE_SIZE);
+
+                region.fill(0);
+
+                FREE_PAGES = pgref.next;
+
+                pgref.next = None;
+
+                Some(pgref)
+            }
+            None => None,
+        }
+    }
+
+    unsafe fn free(self: &'static mut PageInfo) {
+        if self.refc != 0 {
+            panic!("free_page: page is used");
+        }
+
+        self.next = FREE_PAGES;
+
+        FREE_PAGES = Some(NonNull::new_unchecked(self as *mut _));
+    }
+
     unsafe fn to_physaddr(&self) -> PhysAddr {
         let base = addr_of!(PAGE_INFOS) as usize;
         let this = addr_of!(self) as usize;
@@ -101,33 +130,4 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     }
 
     kernel_end
-}
-
-unsafe fn alloc_page() -> Option<&'static mut PageInfo> {
-    match FREE_PAGES {
-        Some(mut head) => {
-            let pgref = head.as_mut();
-            let vaddr = pgref.to_physaddr().into_vaddr();
-            let region = vaddr.into_slice_mut(mmu::PAGE_SIZE);
-
-            region.fill(0);
-
-            FREE_PAGES = pgref.next;
-
-            pgref.next = None;
-
-            Some(pgref)
-        }
-        None => None,
-    }
-}
-
-unsafe fn free_page(page: &'static mut PageInfo) {
-    if page.refc != 0 {
-        panic!("free_page: page is used");
-    }
-
-    page.next = FREE_PAGES;
-
-    FREE_PAGES = Some(NonNull::new_unchecked(page as *mut _));
 }
