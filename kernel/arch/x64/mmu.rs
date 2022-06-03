@@ -35,40 +35,40 @@ const PRESENT: u64 = 1 << 0;
 const WRITABLE: u64 = 1 << 1;
 const HUGE: u64 = 1 << 7;
 
-static ROOT_DIR: SpinlockMutex<PML4> = SpinlockMutex::new(PML4::empty());
+static ROOT_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
 
-struct PML4 {
+struct PageMapLevel4 {
     addr: u64,
-    entries: &'static mut [PML4E],
+    entries: &'static mut [PageMapLevel4Entry],
 }
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PML4E {
+struct PageMapLevel4Entry {
     scalar: u64,
 }
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PDPE {
+struct PageDirectoryPointerEntry {
     scalar: u64,
 }
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PDE {
+struct PageDirectoryEntry {
     scalar: u64,
 }
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PTE {
+struct PageTableEntry {
     scalar: u64,
 }
 
-impl PML4 {
+impl PageMapLevel4 {
     const fn empty() -> Self {
-        PML4 {
+        PageMapLevel4 {
             addr: 0,
             entries: &mut [],
         }
@@ -76,7 +76,7 @@ impl PML4 {
 
     fn from_addr(addr: u64) -> Self {
         let entries = unsafe {
-            let addr = addr as *mut PML4E;
+            let addr = addr as *mut PageMapLevel4Entry;
             core::slice::from_raw_parts_mut(addr, ENTRIES)
         };
 
@@ -84,7 +84,7 @@ impl PML4 {
     }
 
     fn clear(&mut self) {
-        let zero_entry = PML4E { scalar: 0 };
+        let zero_entry = PageMapLevel4Entry { scalar: 0 };
 
         self.entries.fill(zero_entry);
     }
@@ -96,7 +96,7 @@ pub fn init() {
         static pml4: u64;
     }
 
-    *ROOT_DIR.guard().data = PML4::from_addr(unsafe { pml4 });
+    *ROOT_DIR.guard().data = PageMapLevel4::from_addr(unsafe { pml4 });
 }
 
 #[derive(Debug)]
