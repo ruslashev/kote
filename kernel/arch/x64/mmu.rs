@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::slice;
+
 use crate::spinlock::SpinlockMutex;
-use crate::types::{Address, Bytes, KiB, MiB, VirtAddr};
+use crate::types::{Address, Bytes, KiB, MiB, PhysAddr, VirtAddr};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
@@ -66,6 +68,67 @@ struct PageTableEntry {
     scalar: u64,
 }
 
+impl From<PageMapLevel4Entry> for u64 {
+    fn from(val: PageMapLevel4Entry) -> Self {
+        val.scalar
+    }
+}
+
+impl From<PageDirectoryPointerEntry> for u64 {
+    fn from(val: PageDirectoryPointerEntry) -> Self {
+        val.scalar
+    }
+}
+
+impl From<PageDirectoryEntry> for u64 {
+    fn from(val: PageDirectoryEntry) -> Self {
+        val.scalar
+    }
+}
+
+impl From<PageTableEntry> for u64 {
+    fn from(val: PageTableEntry) -> Self {
+        val.scalar
+    }
+}
+
+trait DirectoryEntry: Into<u64> {
+    type PointsTo;
+
+    fn present(self) -> bool {
+        self.into() & PRESENT != 0
+    }
+
+    /// Get the address of directory this entry points to
+    fn pointed_addr(self) -> VirtAddr {
+        let paddr = self.into() & 0xffffffffff000;
+        PhysAddr::from(paddr as usize).into_vaddr()
+    }
+
+    fn pointed_dir<'a>(self) -> &'a mut [Self::PointsTo] {
+        let vaddr = self.pointed_addr();
+        let ptr = vaddr.0 as *mut Self::PointsTo;
+
+        unsafe { slice::from_raw_parts_mut(ptr, ENTRIES) }
+    }
+}
+
+impl DirectoryEntry for PageMapLevel4Entry {
+    type PointsTo = PageDirectoryPointerEntry;
+}
+
+impl DirectoryEntry for PageDirectoryPointerEntry {
+    type PointsTo = PageDirectoryEntry;
+}
+
+impl DirectoryEntry for PageDirectoryEntry {
+    type PointsTo = PageTableEntry;
+}
+
+impl DirectoryEntry for PageTableEntry {
+    type PointsTo = u64;
+}
+
 impl PageMapLevel4 {
     const fn empty() -> Self {
         PageMapLevel4 {
@@ -74,10 +137,10 @@ impl PageMapLevel4 {
         }
     }
 
-    fn from_addr(addr: u64) -> Self {
+    fn new(addr: u64) -> Self {
         let entries = unsafe {
             let addr = addr as *mut PageMapLevel4Entry;
-            core::slice::from_raw_parts_mut(addr, ENTRIES)
+            slice::from_raw_parts_mut(addr, ENTRIES)
         };
 
         Self { addr, entries }
@@ -96,24 +159,24 @@ pub fn init() {
         static pml4: u64;
     }
 
-    *ROOT_DIR.guard().data = PageMapLevel4::from_addr(unsafe { pml4 });
+    *ROOT_DIR.guard().data = PageMapLevel4::new(unsafe { pml4 });
 }
 
 #[derive(Debug)]
 pub struct PageFrames4K {
-    pml4_o: u64,
-    pdpt_o: u64,
-    pd_off: u64,
-    pt_off: u64,
-    offset: u64,
+    pml4_offs: usize,
+    pdpt_offs: usize,
+    pd_offset: usize,
+    pt_offset: usize,
+    pg_offset: usize,
 }
 
 #[derive(Debug)]
 pub struct PageFrames2M {
-    pml4_o: u64,
-    pdpt_o: u64,
-    pd_off: u64,
-    offset: u64,
+    pml4_offs: usize,
+    pdpt_offs: usize,
+    pd_offset: usize,
+    pg_offset: usize,
 }
 
 trait ToFrames {
@@ -123,25 +186,21 @@ trait ToFrames {
 
 impl ToFrames for VirtAddr {
     fn to_4k_page_frames(&self) -> PageFrames4K {
-        let addr: u64 = self.0.try_into().unwrap();
-
         PageFrames4K {
-            pml4_o: (addr & 0xff8000000000) >> 39,
-            pdpt_o: (addr & 0x007fc0000000) >> 30,
-            pd_off: (addr & 0x00003fe00000) >> 21,
-            pt_off: (addr & 0x0000001ff000) >> 12,
-            offset: (addr & 0x000000000fff) >> 0,
+            pml4_offs: (self.0 & 0xff8000000000) >> 39,
+            pdpt_offs: (self.0 & 0x007fc0000000) >> 30,
+            pd_offset: (self.0 & 0x00003fe00000) >> 21,
+            pt_offset: (self.0 & 0x0000001ff000) >> 12,
+            pg_offset: (self.0 & 0x000000000fff) >> 0,
         }
     }
 
     fn to_2m_page_frames(&self) -> PageFrames2M {
-        let addr: u64 = self.0.try_into().unwrap();
-
         PageFrames2M {
-            pml4_o: (addr & 0xff8000000000) >> 39,
-            pdpt_o: (addr & 0x007fc0000000) >> 30,
-            pd_off: (addr & 0x00003fe00000) >> 21,
-            offset: (addr & 0x0000001fffff) >> 0,
+            pml4_offs: (self.0 & 0xff8000000000) >> 39,
+            pdpt_offs: (self.0 & 0x007fc0000000) >> 30,
+            pd_offset: (self.0 & 0x00003fe00000) >> 21,
+            pg_offset: (self.0 & 0x0000001fffff) >> 0,
         }
     }
 }
@@ -169,7 +228,36 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
         let frames = virt.to_2m_page_frames();
 
         unsafe {
-            *pd_ptr.add(frames.pd_off as usize) = phys | HUGE | WRITABLE | PRESENT;
+            *pd_ptr.add(frames.pd_offset as usize) = phys | HUGE | WRITABLE | PRESENT;
         }
     }
+}
+
+pub fn is_page_present(addr: VirtAddr) -> bool {
+    let frames = addr.to_4k_page_frames();
+    let root = ROOT_DIR.guard();
+    let pml4e = root.entries[frames.pml4_offs];
+
+    if !pml4e.present() {
+        return false;
+    }
+
+    let pdpt = pml4e.pointed_dir();
+    let pdpe = pdpt[frames.pdpt_offs];
+
+    if !pdpe.present() {
+        return false;
+    }
+
+    let pdt = pdpe.pointed_dir();
+    let pde = pdt[frames.pd_offset];
+
+    if !pde.present() {
+        return false;
+    }
+
+    let pt = pde.pointed_dir();
+    let pte = pt[frames.pt_offset];
+
+    pte.present()
 }
