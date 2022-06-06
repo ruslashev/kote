@@ -16,6 +16,9 @@ GDB_OPTS = -ex 'target remote :$(GDB_PORT)'
 DISASOBJS = $(notdir $(OBJS) $(KERNBIN))
 DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
 
+ADDR2LINE = $(TOOLCHAIN)addr2line
+ADDR2LINE_FLAGS = --addresses --inlines --pretty-print --functions --demangle
+
 disassembly: $(DISAS)
 
 bochs: $(KERNISO)
@@ -36,4 +39,8 @@ $(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
-.PHONY: disassembly bochs gdb
+symbolize:
+	@cat qemu.log | grep -A 100 Backtrace: | tail -n +2 | awk '{print $$2}' | xargs \
+	        $(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN) | awk '{print NR ") " $$0}'
+
+.PHONY: disassembly bochs gdb symbolize
