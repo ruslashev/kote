@@ -4,6 +4,7 @@
 
 use core::slice;
 
+use crate::mm::pg_alloc;
 use crate::spinlock::SpinlockMutex;
 use crate::types::{Address, Bytes, KiB, MiB, PhysAddr, VirtAddr};
 
@@ -35,6 +36,7 @@ const ENTRIES: usize = 512;
 
 const PRESENT: u64 = 1 << 0;
 const WRITABLE: u64 = 1 << 1;
+const USER_ACCESSIBLE: u64 = 1 << 2;
 const HUGE: u64 = 1 << 7;
 
 static ROOT_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
@@ -68,31 +70,11 @@ struct PageTableEntry {
     scalar: u64,
 }
 
-impl From<PageMapLevel4Entry> for u64 {
-    fn from(val: PageMapLevel4Entry) -> Self {
-        val.scalar
-    }
+trait SetScalar {
+    fn set_scalar(&mut self, val: u64);
 }
 
-impl From<PageDirectoryPointerEntry> for u64 {
-    fn from(val: PageDirectoryPointerEntry) -> Self {
-        val.scalar
-    }
-}
-
-impl From<PageDirectoryEntry> for u64 {
-    fn from(val: PageDirectoryEntry) -> Self {
-        val.scalar
-    }
-}
-
-impl From<PageTableEntry> for u64 {
-    fn from(val: PageTableEntry) -> Self {
-        val.scalar
-    }
-}
-
-trait DirectoryEntry: Into<u64> {
+trait DirectoryEntry: SetScalar + Into<u64> {
     type PointsTo;
 
     fn present(self) -> bool {
@@ -111,7 +93,33 @@ trait DirectoryEntry: Into<u64> {
 
         unsafe { slice::from_raw_parts_mut(ptr, ENTRIES) }
     }
+
+    unsafe fn create_entry(&mut self) {
+        let dir = pg_alloc::alloc_page().inc_refc();
+        let addr = dir.to_physaddr().0 as u64;
+
+        self.set_scalar(addr | USER_ACCESSIBLE | WRITABLE | PRESENT);
+    }
 }
+
+macro_rules! impl_directory_traits {
+    ( $( $type:ident )+ ) => {
+        $(
+impl From<$type> for u64 {
+    fn from(val: $type) -> Self {
+        val.scalar
+    }
+}
+impl SetScalar for $type {
+    fn set_scalar(&mut self, val: u64) {
+        self.scalar = val;
+    }
+}
+        )*
+    }
+}
+
+impl_directory_traits!(PageMapLevel4Entry PageDirectoryPointerEntry PageDirectoryEntry PageTableEntry);
 
 impl DirectoryEntry for PageMapLevel4Entry {
     type PointsTo = PageDirectoryPointerEntry;
@@ -260,4 +268,37 @@ pub fn is_page_present(addr: VirtAddr) -> bool {
     let pte = pt[frames.pt_offset];
 
     pte.present()
+}
+
+pub unsafe fn get_or_create_page(addr: VirtAddr) -> VirtAddr {
+    let frames = addr.to_4k_page_frames();
+    let root = ROOT_DIR.guard();
+    let mut pml4e = root.entries[frames.pml4_offs];
+
+    if !pml4e.present() {
+        pml4e.create_entry();
+    }
+
+    let pdpt = pml4e.pointed_dir();
+    let mut pdpe = pdpt[frames.pdpt_offs];
+
+    if !pdpe.present() {
+        pdpe.create_entry()
+    }
+
+    let pdt = pdpe.pointed_dir();
+    let mut pde = pdt[frames.pd_offset];
+
+    if !pde.present() {
+        pde.create_entry()
+    }
+
+    let pt = pde.pointed_dir();
+    let mut pte = pt[frames.pt_offset];
+
+    if !pte.present() {
+        pte.create_entry();
+    }
+
+    pte.pointed_addr()
 }

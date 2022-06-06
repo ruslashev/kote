@@ -13,7 +13,7 @@ static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
 static mut FREE_PAGES: Option<NonNull<PageInfo>> = None;
 
 #[derive(Default)]
-struct PageInfo {
+pub struct PageInfo {
     next: Option<NonNull<PageInfo>>,
     refc: u16,
 }
@@ -38,7 +38,7 @@ impl PageInfo {
         }
     }
 
-    unsafe fn free(self: &'static mut PageInfo) {
+    unsafe fn free(&mut self) {
         if self.refc != 0 {
             panic!("free_page: page is used");
         }
@@ -48,7 +48,7 @@ impl PageInfo {
         FREE_PAGES = Some(NonNull::new_unchecked(self as *mut _));
     }
 
-    unsafe fn to_physaddr(&self) -> PhysAddr {
+    pub unsafe fn to_physaddr(&self) -> PhysAddr {
         let base = addr_of!(PAGE_INFOS) as usize;
         let this = addr_of!(self) as usize;
         let offset = this - base;
@@ -56,6 +56,21 @@ impl PageInfo {
         let addr = index * mmu::PAGE_SIZE;
 
         PhysAddr::from(addr)
+    }
+
+    pub fn inc_refc(&mut self) -> &mut Self {
+        self.refc += 1;
+        self
+    }
+
+    pub fn dec_refc(&mut self) -> &mut Self {
+        self.refc -= 1;
+        if self.refc == 0 {
+            unsafe {
+                self.free();
+            }
+        }
+        self
     }
 }
 
@@ -130,4 +145,8 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     }
 
     kernel_end
+}
+
+pub fn alloc_page() -> &'static mut PageInfo {
+    unsafe { PageInfo::alloc().expect("pg_alloc: out of memory") }
 }
