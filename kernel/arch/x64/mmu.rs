@@ -241,64 +241,59 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
     }
 }
 
-pub fn is_page_present(addr: VirtAddr) -> bool {
-    let frames = addr.to_4k_page_frames();
-    let root = ROOT_DIR.guard();
-    let pml4e = root.entries[frames.pml4_offs];
-
-    if !pml4e.present() {
-        return false;
-    }
-
-    let pdpt = pml4e.pointed_dir();
-    let pdpe = pdpt[frames.pdpt_offs];
-
-    if !pdpe.present() {
-        return false;
-    }
-
-    let pdt = pdpe.pointed_dir();
-    let pde = pdt[frames.pd_offset];
-
-    if !pde.present() {
-        return false;
-    }
-
-    let pt = pde.pointed_dir();
-    let pte = pt[frames.pt_offset];
-
-    pte.present()
-}
-
-pub unsafe fn get_or_create_page(addr: VirtAddr) -> VirtAddr {
+unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<VirtAddr> {
     let frames = addr.to_4k_page_frames();
     let root = ROOT_DIR.guard();
     let mut pml4e = root.entries[frames.pml4_offs];
 
     if !pml4e.present() {
-        pml4e.create_entry();
+        if create {
+            pml4e.create_entry();
+        } else {
+            return None;
+        }
     }
 
     let pdpt = pml4e.pointed_dir();
     let mut pdpe = pdpt[frames.pdpt_offs];
 
     if !pdpe.present() {
-        pdpe.create_entry()
+        if create {
+            pdpe.create_entry();
+        } else {
+            return None;
+        }
     }
 
     let pdt = pdpe.pointed_dir();
     let mut pde = pdt[frames.pd_offset];
 
     if !pde.present() {
-        pde.create_entry()
+        if create {
+            pde.create_entry();
+        } else {
+            return None;
+        }
     }
 
     let pt = pde.pointed_dir();
     let mut pte = pt[frames.pt_offset];
 
     if !pte.present() {
-        pte.create_entry();
+        if create {
+            pte.create_entry();
+        } else {
+            return None;
+        }
     }
 
-    pte.pointed_addr()
+    Some(pte.pointed_addr())
+}
+
+pub fn is_page_present(addr: VirtAddr) -> bool {
+    unsafe { walk_root_dir(addr, false).is_some() }
+}
+
+pub fn get_or_create_page(addr: VirtAddr) -> VirtAddr {
+    unsafe { walk_root_dir(addr, true).unwrap() }
 }
