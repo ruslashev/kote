@@ -32,7 +32,7 @@ IFLAGS = -follow-links -no-pad
 GRUB_CFG = cfg/grub.cfg
 
 QEMU = qemu-system-x86_64
-QFLAGS = -m 5G -serial stdio
+QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial0
 
 RKERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 KERNLIB = $(BUILDDIR)/libkernel.a
