@@ -42,7 +42,7 @@ const HUGE: u64 = 1 << 7;
 
 static ROOT_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
 
-struct PageMapLevel4 {
+pub struct PageMapLevel4 {
     addr: u64,
     entries: &'static mut [PageMapLevel4Entry],
 }
@@ -246,9 +246,12 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
     }
 }
 
-unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<PageTableEntry> {
+unsafe fn walk_root_dir(
+    addr: VirtAddr,
+    root: &mut PageMapLevel4,
+    create: bool,
+) -> Option<PageTableEntry> {
     let frames = addr.to_4k_page_frames();
-    let root = ROOT_DIR.guard();
     let mut pml4e = root.entries[frames.pml4_offs];
 
     if !pml4e.present() {
@@ -295,28 +298,33 @@ unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<PageTableEntry> 
     Some(pte)
 }
 
-pub fn is_page_present(addr: VirtAddr) -> bool {
-    unsafe { walk_root_dir(addr, false).is_some() }
+pub fn is_page_present(addr: VirtAddr, root: &mut PageMapLevel4) -> bool {
+    unsafe { walk_root_dir(addr, root, false).is_some() }
 }
 
-pub fn get_or_create_page(addr: VirtAddr) -> VirtAddr {
-    unsafe { walk_root_dir(addr, true).unwrap().pointed_vaddr() }
+pub fn get_or_create_page(addr: VirtAddr, root: &mut PageMapLevel4) -> VirtAddr {
+    unsafe { walk_root_dir(addr, root, true).unwrap().pointed_vaddr() }
 }
 
-pub unsafe fn unmap_page_at_addr(addr: VirtAddr) {
-    if let Some(mut pte) = walk_root_dir(addr, false) {
+pub unsafe fn unmap_page_at_addr(addr: VirtAddr, root: &mut PageMapLevel4) {
+    if let Some(mut pte) = walk_root_dir(addr, root, false) {
         pte.pointed_addr().into_page().dec_refc();
         pte.set_scalar(pte.scalar & !PRESENT);
         arch::asm::invalidate_dcache(addr);
     }
 }
 
-pub unsafe fn map_page_at_addr(mut page: pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
-    if let Some(mut pte) = walk_root_dir(addr, true) {
+pub unsafe fn map_page_at_addr(
+    mut page: pg_alloc::PageInfo,
+    addr: VirtAddr,
+    root: &mut PageMapLevel4,
+    perms: u64,
+) {
+    if let Some(mut pte) = walk_root_dir(addr, root, true) {
         page.inc_refc();
 
         if pte.present() {
-            unmap_page_at_addr(addr);
+            unmap_page_at_addr(addr, root);
         }
 
         let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
