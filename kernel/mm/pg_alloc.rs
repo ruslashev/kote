@@ -74,6 +74,15 @@ impl PageInfo {
     }
 }
 
+impl From<PhysAddr> for &mut PageInfo {
+    fn from(paddr: PhysAddr) -> Self {
+        unsafe {
+            let idx = paddr.0 / mmu::PAGE_SIZE;
+            &mut PAGE_INFOS[idx]
+        }
+    }
+}
+
 pub fn init(info: &BootloaderInfo) -> u64 {
     init_page_infos(info)
 }

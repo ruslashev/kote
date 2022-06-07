@@ -4,6 +4,8 @@
 
 use core::arch::asm;
 
+use crate::types::VirtAddr;
+
 pub mod io {
     use super::asm;
 
@@ -34,6 +36,14 @@ pub mod io {
     #[inline(always)]
     pub fn wait() {
         outb(0x80, 0); // unused port
+    }
+}
+
+pub fn invalidate_dcache(addr: VirtAddr) {
+    unsafe {
+        asm!("invlpg {}",
+            in(reg) addr.0,
+            options(nostack, preserves_flags));
     }
 }
 

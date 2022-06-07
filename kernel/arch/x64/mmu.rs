@@ -4,6 +4,7 @@
 
 use core::slice;
 
+use crate::arch;
 use crate::mm::pg_alloc;
 use crate::spinlock::SpinlockMutex;
 use crate::types::{Address, Bytes, KiB, MiB, PhysAddr, VirtAddr};
@@ -82,13 +83,17 @@ trait DirectoryEntry: SetScalar + Into<u64> {
     }
 
     /// Get the address of directory this entry points to
-    fn pointed_addr(self) -> VirtAddr {
+    fn pointed_addr(self) -> PhysAddr {
         let paddr = self.into() & 0xffffffffff000;
-        PhysAddr::from(paddr as usize).into_vaddr()
+        PhysAddr::from(paddr as usize)
+    }
+
+    fn pointed_vaddr(self) -> VirtAddr {
+        self.pointed_addr().into_vaddr()
     }
 
     fn pointed_dir<'a>(self) -> &'a mut [Self::PointsTo] {
-        let vaddr = self.pointed_addr();
+        let vaddr = self.pointed_vaddr();
         let ptr = vaddr.0 as *mut Self::PointsTo;
 
         unsafe { slice::from_raw_parts_mut(ptr, ENTRIES) }
@@ -241,7 +246,7 @@ pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
     }
 }
 
-unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<VirtAddr> {
+unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<PageTableEntry> {
     let frames = addr.to_4k_page_frames();
     let root = ROOT_DIR.guard();
     let mut pml4e = root.entries[frames.pml4_offs];
@@ -287,7 +292,7 @@ unsafe fn walk_root_dir(addr: VirtAddr, create: bool) -> Option<VirtAddr> {
         }
     }
 
-    Some(pte.pointed_addr())
+    Some(pte)
 }
 
 pub fn is_page_present(addr: VirtAddr) -> bool {
@@ -295,5 +300,13 @@ pub fn is_page_present(addr: VirtAddr) -> bool {
 }
 
 pub fn get_or_create_page(addr: VirtAddr) -> VirtAddr {
-    unsafe { walk_root_dir(addr, true).unwrap() }
+    unsafe { walk_root_dir(addr, true).unwrap().pointed_vaddr() }
+}
+
+pub unsafe fn unmap_page_at_addr(addr: VirtAddr) {
+    if let Some(mut pte) = walk_root_dir(addr, false) {
+        pte.pointed_addr().into_page().dec_refc();
+        pte.set_scalar(pte.scalar & !PRESENT);
+        arch::asm::invalidate_dcache(addr);
+    }
 }

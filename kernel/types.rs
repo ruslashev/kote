@@ -6,6 +6,7 @@ use core::fmt;
 
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
 use crate::arch::KERNEL_BASE;
+use crate::mm::pg_alloc::PageInfo;
 
 pub trait PowerOfTwoOps: Copy {
     fn is_po2_aligned(self, po2: Self) -> bool;
@@ -141,6 +142,10 @@ impl From<PhysAddr> for VirtAddr {
 
 impl PhysAddr {
     pub fn into_vaddr(self) -> VirtAddr {
+        self.into()
+    }
+
+    pub fn into_page(self) -> &'static mut PageInfo {
         self.into()
     }
 }
