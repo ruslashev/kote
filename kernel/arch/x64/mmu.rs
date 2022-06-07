@@ -310,3 +310,17 @@ pub unsafe fn unmap_page_at_addr(addr: VirtAddr) {
         arch::asm::invalidate_dcache(addr);
     }
 }
+
+pub unsafe fn map_page_at_addr(mut page: pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
+    if let Some(mut pte) = walk_root_dir(addr, true) {
+        page.inc_refc();
+
+        if pte.present() {
+            unmap_page_at_addr(addr);
+        }
+
+        let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
+
+        pte.set_scalar(addr)
+    }
+}
