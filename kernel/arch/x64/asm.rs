@@ -47,6 +47,16 @@ pub fn invalidate_dcache(addr: VirtAddr) {
     }
 }
 
+pub fn nmi_enable() {
+    io::outb(0x70, io::inb(0x70) & !(1 << 7));
+    io::inb(0x71);
+}
+
+pub fn nmi_disable() {
+    io::outb(0x70, io::inb(0x70) | (1 << 7));
+    io::inb(0x71);
+}
+
 macro_rules! read_reg {
     ($reg:ident) => {
         unsafe {

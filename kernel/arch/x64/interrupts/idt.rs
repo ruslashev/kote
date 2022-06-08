@@ -63,9 +63,7 @@ pub fn build() {
         fn handle_irq_0();
         fn handle_irq_1();
         fn handle_irq_2();
-        fn handle_irq_3();
-        fn handle_irq_4();
-        fn handle_irq_5();
+        fn handle_irq_8();
     }
 
     unsafe {
@@ -105,9 +103,7 @@ pub fn build() {
         IDT[32] = create_idt_entry(handle_irq_0, true, false);
         IDT[33] = create_idt_entry(handle_irq_1, true, false);
         IDT[34] = create_idt_entry(handle_irq_2, true, false);
-        IDT[35] = create_idt_entry(handle_irq_3, true, false);
-        IDT[36] = create_idt_entry(handle_irq_4, true, false);
-        IDT[37] = create_idt_entry(handle_irq_5, true, false);
+        IDT[40] = create_idt_entry(handle_irq_8, true, false);
     }
 }
 

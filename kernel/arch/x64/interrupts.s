@@ -121,6 +121,4 @@ irq_handler_common:
 define_irq_handler 0
 define_irq_handler 1
 define_irq_handler 2
-define_irq_handler 3
-define_irq_handler 4
-define_irq_handler 5
+define_irq_handler 8

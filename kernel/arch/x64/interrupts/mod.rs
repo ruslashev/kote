@@ -9,12 +9,18 @@ mod handlers;
 mod idt;
 mod irq;
 mod pic;
+mod rtc;
 
 pub fn init() {
     pic::remap();
 
     idt::build();
     idt::load();
+
+    rtc::init();
+
+    pic::enable_line(2);
+    pic::enable_line(8);
 }
 
 #[inline(always)]
