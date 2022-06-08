@@ -10,11 +10,11 @@ const PIC2: u16 = 0xa0;
 const PIC1_DATA: u16 = PIC1 + 1;
 const PIC2_DATA: u16 = PIC2 + 1;
 
-/// Remap IRQs from 0..15 to 32..47 (+PIC_IRQ_OFFSET) to not conflict with CPU exceptions
+/// Remap IRQs from 0..15 to 32..47 (+`PIC_IRQ_OFFSET`) to not conflict with CPU exceptions
 pub fn remap() {
     // Begin initialization
-    outb_wait(PIC1, 0x11);
-    outb_wait(PIC2, 0x11);
+    outb_wait(PIC1, 0b00010001);
+    outb_wait(PIC2, 0b00010001);
 
     // Tell offsets
     outb_wait(PIC1_DATA, PIC_IRQ_OFFSET);
@@ -24,7 +24,7 @@ pub fn remap() {
     outb_wait(PIC1_DATA, 4);
     outb_wait(PIC2_DATA, 2);
 
-    // Set 8086 mode for some reason
+    // Set 8086 mode
     outb_wait(PIC1_DATA, 1);
     outb_wait(PIC2_DATA, 1);
 
