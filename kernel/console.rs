@@ -48,6 +48,11 @@ impl Console {
     }
 
     fn write_byte(&mut self, b: u8) {
+        if self.cursor_y == self.height {
+            self.cursor_y -= 1;
+            self.shift_up();
+        }
+
         if b == b'\n' {
             self.newline();
             return;
@@ -68,11 +73,6 @@ impl Console {
     fn newline(&mut self) {
         self.cursor_x = 0;
         self.cursor_y += 1;
-
-        if self.cursor_y >= self.height {
-            self.cursor_y -= 1;
-            self.shift_up();
-        }
     }
 
     fn shift_up(&mut self) {
@@ -85,6 +85,12 @@ impl Console {
         unsafe {
             core::ptr::copy(src, dst, cnt);
         }
+
+        let botptr = self.fb.addr + cnt;
+        let length = row * self.font.height / 3;
+        let bottom = unsafe { core::slice::from_raw_parts_mut(botptr as *mut u32, length) };
+
+        bottom.fill(COLOR_BG);
     }
 }
 
