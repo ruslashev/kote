@@ -39,8 +39,10 @@ $(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
+LOG ?= qemu.log
+
 symbolize:
-	@cat qemu.log | grep -A 100 Backtrace: | tail -n +2 | awk '{print $$2}' | xargs \
+	@cat $(LOG) | grep -A 100 Backtrace: | tail -n +2 | awk '{print $$2}' | xargs \
 	        $(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN) | awk '{print NR ") " $$0}'
 
 .PHONY: disassembly bochs gdb symbolize
