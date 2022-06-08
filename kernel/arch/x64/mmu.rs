@@ -329,6 +329,6 @@ pub unsafe fn map_page_at_addr(
 
         let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
 
-        pte.set_scalar(addr)
+        pte.set_scalar(addr);
     }
 }

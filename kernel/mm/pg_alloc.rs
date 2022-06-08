@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use core::mem::size_of;
-use core::ptr::{addr_of, NonNull};
+use core::ptr::{addr_of, addr_of_mut, NonNull};
 
 use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
@@ -39,9 +39,7 @@ impl PageInfo {
     }
 
     unsafe fn free(&mut self) {
-        if self.refc != 0 {
-            panic!("free_page: page is used");
-        }
+        assert!(self.refc == 0, "free_page: page is used");
 
         self.next = FREE_PAGES;
 
@@ -117,7 +115,7 @@ fn init_page_infos(info: &BootloaderInfo) -> u64 {
                 }
 
                 PAGE_INFOS[index].next = FREE_PAGES;
-                FREE_PAGES = Some(NonNull::new_unchecked(&mut PAGE_INFOS[index] as *mut _));
+                FREE_PAGES = Some(NonNull::new_unchecked(addr_of_mut!(PAGE_INFOS[index])));
             }
         }
     }

@@ -6,6 +6,8 @@
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 #![allow(clippy::identity_op)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::module_name_repetitions)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 #![feature(fn_traits)]
