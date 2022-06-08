@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use super::rtc;
 use crate::arch::asm::io;
 
 const PIC_IRQ_OFFSET: u8 = 32;
@@ -76,7 +77,7 @@ pub fn disable_line(irq: u8) {
 }
 
 /// Send end-of-interrupt
-pub fn irq_eoi(irq: u8) {
+fn irq_eoi(irq: u8) {
     let eoi = 0x20;
 
     if irq >= 8 {
@@ -84,4 +85,15 @@ pub fn irq_eoi(irq: u8) {
     }
 
     io::outb(PIC1, eoi);
+}
+
+#[no_mangle]
+pub extern "C" fn irq_dispatch(vec: u8) {
+    println!("In IRQ {} handler", vec);
+
+    if vec == 8 {
+        rtc::handle_interrupt();
+    }
+
+    irq_eoi(vec);
 }

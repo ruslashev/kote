@@ -7,7 +7,6 @@ use core::arch::asm;
 mod exceptions;
 mod handlers;
 mod idt;
-mod irq;
 mod pic;
 mod rtc;
 
