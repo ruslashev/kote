@@ -24,7 +24,7 @@ struct IDTEntry {
     reserved: u32,
 }
 
-pub fn build() {
+fn build() {
     // Can't use statics in const fns, otherwise this would've been one
     extern "C" {
         fn handle_exception_0();
@@ -141,7 +141,7 @@ fn create_idt_entry(
     }
 }
 
-pub fn load() {
+fn load() {
     #[repr(C, packed)]
     struct IDTDescriptor {
         size: u16,
@@ -158,4 +158,9 @@ pub fn load() {
             in(reg) &idtr,
             options(nostack));
     }
+}
+
+pub(super) fn init() {
+    build();
+    load();
 }

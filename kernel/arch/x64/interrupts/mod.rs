@@ -13,10 +13,7 @@ mod rtc;
 
 pub fn init() {
     pic::remap();
-
-    idt::build();
-    idt::load();
-
+    idt::init();
     rtc::init();
 
     pic::enable_line(2);
