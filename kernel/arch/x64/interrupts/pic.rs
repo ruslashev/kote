@@ -89,8 +89,6 @@ fn irq_eoi(irq: u8) {
 
 #[no_mangle]
 pub extern "C" fn irq_dispatch(vec: u8) {
-    println!("In IRQ {} handler", vec);
-
     if vec == 8 {
         rtc::handle_interrupt();
     }

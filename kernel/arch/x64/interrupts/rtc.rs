@@ -45,8 +45,6 @@ fn set_frequency() {
 }
 
 pub(super) fn handle_interrupt() {
-    println!("rtc tick");
-
     eoi();
 }
 
