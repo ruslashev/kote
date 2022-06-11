@@ -33,11 +33,11 @@ GRUB_CFG = cfg/grub.cfg
 QEMU = qemu-system-x86_64
 QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial0
 
-RKERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
-KERNLIB = $(BUILDDIR)/libkernel.a
+KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 
 ASRC = start.s interrupts.s
-OBJS = $(ASRC:%.s=$(OBJDIR)/%.o) $(KERNLIB)
+AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
+OBJS = $(AOBJ) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
 KERNISO = $(BUILDDIR)/ree.iso
 
@@ -67,10 +67,7 @@ $(KERNISO): $(ISODIR) $(KERNBIN)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
 	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
 
-$(KERNLIB): $(RKERNLIB)
-	@$(LN) $(realpath $<) $@
-
-$(RKERNLIB): $(RUSTDIR)
+$(KERNLIB): $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS)
 

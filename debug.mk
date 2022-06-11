@@ -13,7 +13,7 @@ QFLAGS_GDB = $(QFLAGS) -S -gdb tcp::$(GDB_PORT)
 GDB = gdb-multiarch
 GDB_OPTS = -ex 'target remote :$(GDB_PORT)'
 
-DISASOBJS = $(notdir $(OBJS) $(KERNBIN))
+DISASOBJS = $(notdir $(AOBJ) $(KERNBIN))
 DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
 
 ADDR2LINE = $(TOOLCHAIN)addr2line
