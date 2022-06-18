@@ -39,7 +39,7 @@ ASRC = start.s interrupts.s
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
 OBJS = $(AOBJ) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
-KERNISO = $(BUILDDIR)/ree.iso
+KERNISO = $(BUILDDIR)/kote.iso
 
 ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
 

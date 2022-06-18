@@ -43,7 +43,7 @@ pub extern "C" fn kmain() {
     arch::interrupts::init();
     arch::interrupts::enable();
 
-    println!("Booting ree...");
+    println!("Booting kote...");
 
     println!("Available memory:");
     print!("{}", &info.free_areas);
