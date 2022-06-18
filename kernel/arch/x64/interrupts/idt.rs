@@ -4,6 +4,8 @@
 
 use core::arch::asm;
 
+use crate::arch::GDT_KERN_CODE;
+
 static mut IDT: [IDTEntry; 256] = [IDTEntry {
     handler_addr_low: 0,
     gdt_selector: 0,
@@ -129,11 +131,11 @@ fn create_idt_entry(
         0b1110
     };
 
-    let attributes: u16 = (present << 15) | (ring << 13) | (gate_type << 8);
+    let attributes = (present << 15) | (ring << 13) | (gate_type << 8);
 
     IDTEntry {
         handler_addr_low,
-        gdt_selector: 0x8,
+        gdt_selector: GDT_KERN_CODE.into(),
         attributes,
         handler_addr_mid,
         handler_addr_top,

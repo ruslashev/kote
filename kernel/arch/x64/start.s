@@ -244,12 +244,16 @@ section .rodata
 gdt:
 %define RW (1 << 41) ; Readable (for code) / Writable (for data)
 %define Ex (1 << 43) ; Executable
-%define S  (1 << 44) ; 0 (system) / 1 (user) code and data
+%define S  (1 << 44) ; Is a code or data segment
+%define K  (0 << 45) ; Kernel privilege level
+%define U  (3 << 45) ; User privilege level
 %define Pr (1 << 47) ; Present
 %define L  (1 << 53) ; Is 64-bit code
-	dq 0                    ; null
-	dq RW | Ex | S | Pr | L ; code
-	dq RW      | S | Pr     ; data
+	dq 0                        ; null
+	dq RW | Ex | S | K | Pr | L ; kernel code
+	dq RW      | S | K | Pr     ; kernel data
+	dq RW | Ex | S | U | Pr | L ; user code
+	dq RW      | S | U | Pr     ; user data
 .ptr:
 	dw $ - gdt - 1 ; size
 	dq gdt         ; offset (address)
