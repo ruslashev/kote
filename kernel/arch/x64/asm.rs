@@ -4,7 +4,7 @@
 
 use core::arch::asm;
 
-use crate::types::VirtAddr;
+use crate::mm::types::VirtAddr;
 
 pub mod io {
     use super::asm;

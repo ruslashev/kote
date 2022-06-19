@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 pub mod pg_alloc;
+pub mod types;
 
 use crate::arch;
 use crate::bootloader::BootloaderInfo;

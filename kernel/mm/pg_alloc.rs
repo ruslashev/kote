@@ -7,7 +7,8 @@ use core::ptr::{addr_of, addr_of_mut, NonNull};
 
 use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
-use crate::types::{PhysAddr, PowerOfTwoOps};
+use crate::mm::types::PhysAddr;
+use crate::types::PowerOfTwoOps;
 
 static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
 static mut FREE_PAGES: Option<NonNull<PageInfo>> = None;

@@ -6,8 +6,9 @@ use core::slice;
 
 use crate::arch;
 use crate::mm::pg_alloc;
+use crate::mm::types::{Address, PhysAddr, VirtAddr};
 use crate::spinlock::SpinlockMutex;
-use crate::types::{Address, Bytes, KiB, MiB, PhysAddr, VirtAddr};
+use crate::types::{Bytes, KiB, MiB};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
