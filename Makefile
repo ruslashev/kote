@@ -34,6 +34,8 @@ QEMU = qemu-system-x86_64
 QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial0
 
 KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
+USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
+USERSPACE_BUNDLE = $(BUILDDIR)/loop
 
 ASRC = start.s interrupts.s
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
@@ -67,9 +69,16 @@ $(KERNISO): $(ISODIR) $(KERNBIN)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
 	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
 
-$(KERNLIB): $(RUSTDIR)
+$(KERNLIB): $(RUSTDIR) $(USERSPACE_BUNDLE)
 	@$(call ECHO, cargo)
-	@$(CARGO) build $(CFLAGS)
+	@$(CARGO) build $(CFLAGS) -p kernel
+
+$(USERSPACE_BUNDLE): $(USERSPACE_CRATES)
+	@$(LN) $(shell pwd)/$(RBUILDDIR)/$< $@
+
+$(USERSPACE_CRATES): $(RUSTDIR)
+	@$(call ECHO, cargo)
+	@$(CARGO) build $(CFLAGS) -p $@
 
 $(OBJDIR) $(RUSTDIR) $(DISASDIR):
 	@mkdir -p $@

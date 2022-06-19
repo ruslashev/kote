@@ -27,6 +27,7 @@ mod dwarf;
 mod elf;
 mod mm;
 mod panic;
+mod process;
 mod serial;
 mod spinlock;
 mod types;
@@ -50,6 +51,8 @@ pub extern "C" fn kmain() {
 
     println!("Kernel sections:");
     print!("{}", info.section_headers.as_ref().unwrap());
+
+    process::init();
 
     loop {}
 }
