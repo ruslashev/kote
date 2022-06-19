@@ -119,7 +119,7 @@ impl Exception {
  * └────────────────────────────────┘
  */
 #[repr(C, packed)]
-pub(super) struct ExceptionFrame {
+pub struct ExceptionFrame {
     pub r15: u64,
     pub r14: u64,
     pub r13: u64,
@@ -185,6 +185,12 @@ impl fmt::Display for ExceptionFrame {
         }
 
         Ok(())
+    }
+}
+
+impl crate::mm::types::InterruptFrameOps for ExceptionFrame {
+    fn set_program_counter(&mut self, addr: usize) {
+        self.return_rip = addr as u64;
     }
 }
 

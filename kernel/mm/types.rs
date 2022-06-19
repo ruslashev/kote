@@ -72,3 +72,7 @@ impl VirtAddr {
         core::slice::from_raw_parts_mut(self.0 as *mut u8, size)
     }
 }
+
+pub trait InterruptFrameOps: fmt::Display {
+    fn set_program_counter(&mut self, addr: usize);
+}

@@ -4,7 +4,7 @@
 
 use core::arch::asm;
 
-mod exceptions;
+pub mod exceptions;
 mod handlers;
 mod idt;
 mod pic;
