@@ -78,3 +78,17 @@ macro_rules! read_fp {
         read_reg!(rbp)
     };
 }
+
+macro_rules! write_reg {
+    ($reg:ident, $val:expr) => {
+        unsafe {
+            use core::arch::asm;
+
+            let val: u64 = $val;
+
+            asm!(concat!("mov ", stringify!($reg), " {}"),
+                in(reg) val,
+                options(nomem, nostack));
+        }
+    }
+}

@@ -76,3 +76,7 @@ impl VirtAddr {
 pub trait InterruptFrameOps: fmt::Display {
     fn set_program_counter(&mut self, addr: usize);
 }
+
+pub trait RootPageDirOps {
+    fn switch_to_this(self);
+}

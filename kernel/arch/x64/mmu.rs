@@ -6,7 +6,7 @@ use core::slice;
 
 use crate::arch;
 use crate::mm::pg_alloc;
-use crate::mm::types::{Address, PhysAddr, VirtAddr};
+use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
 use crate::spinlock::SpinlockMutex;
 use crate::types::{Bytes, KiB, MiB};
 
@@ -19,12 +19,8 @@ pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
  * │                               │
  * │  Identity mapping for kernel  │ 0xffffffff80000000 KERNEL_BASE
  * ├───────────────────────────────┤
- * │   Page allocation structures  │
- * ├───────────────────────────────┤
- * │      Framebuffer mapping      │
- * ├───────────────────────────────┤
  * │                               │
- * │          Kernel heap          │
+ * │             TODO              │
  *
  * ╵               .               ╵
  * ╵               .               ╵
@@ -41,7 +37,7 @@ const WRITABLE: u64 = 1 << 1;
 const USER_ACCESSIBLE: u64 = 1 << 2;
 const HUGE: u64 = 1 << 7;
 
-static ROOT_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
+static ROOT_KERN_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
 
 pub struct PageMapLevel4 {
     addr: u64,
@@ -173,7 +169,7 @@ pub fn init() {
         static pml4: u64;
     }
 
-    *ROOT_DIR.guard().data = PageMapLevel4::new(unsafe { pml4 });
+    *ROOT_KERN_DIR.guard().data = PageMapLevel4::new(unsafe { pml4 });
 }
 
 #[derive(Debug)]
@@ -331,5 +327,12 @@ pub unsafe fn map_page_at_addr(
         let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
 
         pte.set_scalar(addr);
+    }
+}
+
+impl RootPageDirOps for PageMapLevel4 {
+    fn switch_to_this(self) {
+        let phys = self.addr;
+        write_reg!(cr3, phys);
     }
 }
