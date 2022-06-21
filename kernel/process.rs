@@ -5,5 +5,5 @@
 static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
 pub fn init() {
-    println!("{:x?}", LOOP_ELF);
+    println!("{:x?}", &LOOP_ELF[0..4]);
 }

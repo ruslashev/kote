@@ -153,7 +153,7 @@ check_long_mode:
 	jmp initspin
 
 map_pages:
-%define Addr (1 << 21) ; 1 MiB
+%define Addr (1 << 21) ; 2 MiB
 %define Huge (1 << 7)
 %define WrPr (1 << 1) | (1 << 0) ; Writable and present
 	; Identity mapping: 0x0..0x400000 -> 0x0..0x400000; 2 entries, 2 MiB each.
