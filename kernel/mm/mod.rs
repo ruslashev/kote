@@ -7,25 +7,11 @@ pub mod types;
 
 use crate::arch;
 use crate::bootloader::BootloaderInfo;
-use crate::types::PowerOfTwoOps;
 
 pub fn init(info: &BootloaderInfo) -> usize {
     arch::mmu::init();
+
     let page_infos_end = pg_alloc::init(info);
 
-    map_framebuffer(page_infos_end, info);
-
     usize::try_from(page_infos_end).expect("framebuffer address overflows usize")
-}
-
-fn map_framebuffer(page_infos_end: u64, info: &BootloaderInfo) {
-    let fb = &info.framebuffer;
-    let phys = fb.addr;
-    let size = fb.pitch * fb.height;
-    let size = u64::from(size);
-    let size = size.lpage_round_up();
-    let virt = page_infos_end;
-    let offset = virt - phys;
-
-    arch::mmu::map_early_region(phys, size, offset);
 }

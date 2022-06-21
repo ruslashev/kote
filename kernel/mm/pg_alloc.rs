@@ -83,14 +83,12 @@ impl From<PhysAddr> for &mut PageInfo {
 }
 
 pub fn init(info: &BootloaderInfo) -> u64 {
-    init_page_infos(info)
-}
-
-fn init_page_infos(info: &BootloaderInfo) -> u64 {
     let (maxpages, start, size) = get_page_infos_region(info);
     let end = KERNEL_BASE + start + size;
 
     mmu::map_early_region(start, size, KERNEL_BASE);
+
+    map_framebuffer(end, info);
 
     unsafe {
         PAGE_INFOS = core::slice::from_raw_parts_mut(start as *mut PageInfo, maxpages);
@@ -153,6 +151,18 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     }
 
     kernel_end
+}
+
+fn map_framebuffer(page_infos_end: u64, info: &BootloaderInfo) {
+    let fb = &info.framebuffer;
+    let phys = fb.addr;
+    let size = fb.pitch * fb.height;
+    let size = u64::from(size);
+    let size = size.lpage_round_up();
+    let virt = page_infos_end;
+    let offset = virt - phys;
+
+    mmu::map_early_region(phys, size, offset);
 }
 
 pub fn alloc_page() -> &'static mut PageInfo {
