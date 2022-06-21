@@ -78,5 +78,6 @@ pub trait InterruptFrameOps: fmt::Display {
 }
 
 pub trait RootPageDirOps {
+    fn new() -> Self;
     fn switch_to_this(self);
 }

@@ -156,5 +156,6 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
 }
 
 pub fn alloc_page() -> &'static mut PageInfo {
+    // This should not die on OOM
     unsafe { PageInfo::alloc().expect("pg_alloc: out of memory") }
 }

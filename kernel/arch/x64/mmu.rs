@@ -331,6 +331,12 @@ pub unsafe fn map_page_at_addr(
 }
 
 impl RootPageDirOps for PageMapLevel4 {
+    fn new() -> Self {
+        let dir = pg_alloc::alloc_page().inc_refc();
+        let phys = unsafe { dir.to_physaddr() };
+        PageMapLevel4::new(phys.0 as u64)
+    }
+
     fn switch_to_this(self) {
         let phys = self.addr;
         write_reg!(cr3, phys);
