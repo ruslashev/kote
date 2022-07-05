@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use core::lazy::OnceCell;
+use core::cell::OnceCell;
 
 use crate::bootloader::BootloaderInfo;
 use crate::panic::panic_no_graphics;
