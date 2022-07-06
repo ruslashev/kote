@@ -331,7 +331,7 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
         }
     }
 
-    cleanup_empty_ranges(&mut mmap.entries, &mut mmap.num_entries);
+    cleanup_empty_ranges(mmap);
 
     sort_ranges(&mut mmap.entries, mmap.num_entries);
 }
@@ -404,21 +404,15 @@ fn resolve_overlaps(
     panic!("unexpected range configuration");
 }
 
-fn cleanup_empty_ranges(entries: &mut [Region; MMAP_MAX_ENTRIES], num_entries: &mut usize) {
-    let old_num_entries = *num_entries;
+fn cleanup_empty_ranges(mmap: &mut MemoryMap) {
+    let old_num_entries = mmap.num_entries;
 
     for eidx in 0..old_num_entries {
-        if entries[eidx].start == 0 && entries[eidx].end == 0 {
-            let ptr = entries.as_mut_ptr();
-
-            unsafe {
-                let src = ptr.add(eidx + 1);
-                let dst = ptr.add(eidx);
-
-                core::ptr::copy(src, dst, *num_entries - eidx - 1);
+        if mmap.entries[eidx].start == 0 && mmap.entries[eidx].end == 0 {
+            for midx in eidx + 1..old_num_entries {
+                mmap.entries[midx - 1] = mmap.entries[midx];
             }
-
-            *num_entries -= 1;
+            mmap.num_entries -= 1;
         }
     }
 }
