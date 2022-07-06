@@ -316,7 +316,7 @@ where
 
     cleanup_empty_ranges(mmap);
 
-    sort_ranges(&mut mmap.entries, mmap.num_entries);
+    sort_ranges(mmap);
 }
 
 fn resolve_overlaps(mmap: &mut MemoryMap, eidx: usize, reserved: &Range<usize>) {
@@ -395,8 +395,11 @@ fn cleanup_empty_ranges(mmap: &mut MemoryMap) {
     }
 }
 
-fn sort_ranges(entries: &mut [Region; MMAP_MAX_ENTRIES], num_entries: usize) {
-    for i in 1..num_entries {
+#[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+fn sort_ranges(mmap: &mut MemoryMap) {
+    let entries = &mut mmap.entries;
+
+    for i in 1..mmap.num_entries {
         let key = entries[i];
         let mut j = i as isize - 1;
 
