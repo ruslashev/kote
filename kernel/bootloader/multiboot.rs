@@ -286,7 +286,6 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
     );
 
     let mmap = &mut info.free_areas;
-    let shdrs = &info.section_headers.as_ref().unwrap();
     let fb = &info.framebuffer;
     let fb_addr = fb.addr as usize;
 
@@ -294,40 +293,24 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
     let io_hole = 0xa0000..0x100000;
     let fb_range = fb_addr..fb_addr + (fb.height * fb.pitch) as usize;
 
-    let some_reserved = [first_page, io_hole, fb_range];
-    let shdr_ranges = SectionInfoIterator::from_info(shdrs).map(|(_, shdr)| {
-        let a = shdr.sh_addr as usize;
-        let s = shdr.sh_size as usize;
-        a..a + s
-    });
+    let shdr_ranges =
+        SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()).map(|(_, shdr)| {
+            let a = shdr.sh_addr as usize;
+            let s = shdr.sh_size as usize;
+            a..a + s
+        });
 
-    let mut keep_looping;
+    remove_reserved(mmap, &[first_page, io_hole, fb_range]);
+    remove_reserved(mmap, &shdr_ranges);
+}
 
-    loop {
-        keep_looping = false;
-
-        'restart: for eidx in 0..mmap.num_entries {
-            let entry = mmap.entries[eidx];
-            let all_reserved = shdr_ranges.clone().chain(some_reserved.clone());
-
-            for reserved in all_reserved {
-                let added = resolve_overlaps(
-                    eidx,
-                    &entry,
-                    &reserved,
-                    &mut mmap.entries,
-                    &mut mmap.num_entries,
-                );
-
-                if added {
-                    keep_looping = true;
-                    break 'restart;
-                }
-            }
-        }
-
-        if !keep_looping {
-            break;
+fn remove_reserved<RangeIter>(mmap: &mut MemoryMap, reserved: &RangeIter)
+where
+    RangeIter: IntoIterator<Item = Range<usize>> + Clone,
+{
+    for eidx in 0..mmap.num_entries {
+        for r in reserved.clone() {
+            resolve_overlaps(mmap, eidx, &r);
         }
     }
 
@@ -336,19 +319,14 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
     sort_ranges(&mut mmap.entries, mmap.num_entries);
 }
 
-fn resolve_overlaps(
-    eidx: usize,
-    entry: &Region,
-    reserved: &Range<usize>,
-    entries: &mut [Region; MMAP_MAX_ENTRIES],
-    num_entries: &mut usize,
-) -> bool {
+fn resolve_overlaps(mmap: &mut MemoryMap, eidx: usize, reserved: &Range<usize>) {
     let r = reserved;
-    let e = entry;
+    let e = mmap.entries[eidx];
+    let entries = &mut mmap.entries;
 
     // Ignore empty ranges
     if (r.start == 0 && r.end == 0) || (e.start == 0 && e.end == 0) {
-        return false;
+        return;
     }
 
     // No overlap
@@ -357,7 +335,7 @@ fn resolve_overlaps(
     //               └──────────┘ e
     // └──────────┘               r
     if r.end <= e.start || e.end <= r.start {
-        return false;
+        return;
     }
 
     // Overlap and `reserved` is to the left
@@ -365,7 +343,7 @@ fn resolve_overlaps(
     // └──────────┘         r
     if e.start < r.end && e.start >= r.start {
         entries[eidx].start = r.end;
-        return false;
+        return;
     }
 
     // Overlap and `reserved` is to the right
@@ -373,7 +351,7 @@ fn resolve_overlaps(
     //         └──────────┘ r
     if e.end > r.start && e.end <= r.end {
         entries[eidx].end = r.start;
-        return false;
+        return;
     }
 
     // `entry` is completely inside `reserved`
@@ -382,7 +360,7 @@ fn resolve_overlaps(
     if r.start <= e.start && r.end >= e.end {
         entries[eidx].start = 0;
         entries[eidx].end = 0;
-        return false;
+        return;
     }
 
     // `reserved` is completely inside `entry`
@@ -391,14 +369,14 @@ fn resolve_overlaps(
     if e.start <= r.start && e.end >= r.end {
         entries[eidx].end = r.start;
 
-        if *num_entries >= MMAP_MAX_ENTRIES {
+        if mmap.num_entries >= MMAP_MAX_ENTRIES {
             panic_no_graphics("Multiboot: mmap entry overflow while resolving overlaps");
         }
 
-        entries[*num_entries].start = r.end;
-        entries[*num_entries].end = e.end;
-        *num_entries += 1;
-        return true;
+        entries[mmap.num_entries].start = r.end;
+        entries[mmap.num_entries].end = e.end;
+        mmap.num_entries += 1;
+        return;
     }
 
     panic!("unexpected range configuration");
