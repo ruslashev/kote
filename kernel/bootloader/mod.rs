@@ -5,9 +5,11 @@
 mod multiboot;
 
 use core::fmt;
+use core::ops::Range;
 use core::{slice, str};
 
 use crate::elf::Elf64Shdr;
+use crate::panic::panic_no_graphics;
 use crate::types::PowerOfTwoOps;
 
 const MMAP_MAX_ENTRIES: usize = 32;
@@ -146,6 +148,116 @@ impl fmt::Display for MemoryMap {
         writeln!(f, "npages={}", npages)?;
 
         Ok(())
+    }
+}
+
+impl MemoryMap {
+    pub fn remove_reserved<RangeIter>(&mut self, reserved: &RangeIter)
+    where
+        RangeIter: IntoIterator<Item = Range<usize>> + Clone,
+    {
+        for eidx in 0..self.num_entries {
+            for r in reserved.clone() {
+                self.resolve_overlaps(eidx, &r);
+            }
+        }
+
+        self.cleanup_empty_ranges();
+
+        self.sort_ranges();
+    }
+
+    fn resolve_overlaps(&mut self, eidx: usize, reserved: &Range<usize>) {
+        let r = reserved;
+        let e = self.entries[eidx];
+        let entries = &mut self.entries;
+
+        // Ignore empty ranges
+        if (r.start == 0 && r.end == 0) || (e.start == 0 && e.end == 0) {
+            return;
+        }
+
+        // No overlap
+        // └──────────┘               e
+        //               └──────────┘ r
+        //               └──────────┘ e
+        // └──────────┘               r
+        if r.end <= e.start || e.end <= r.start {
+            return;
+        }
+
+        // Overlap and `reserved` is to the left
+        //         └──────────┘ e
+        // └──────────┘         r
+        if e.start < r.end && e.start >= r.start {
+            entries[eidx].start = r.end;
+            return;
+        }
+
+        // Overlap and `reserved` is to the right
+        // └──────────┘         e
+        //         └──────────┘ r
+        if e.end > r.start && e.end <= r.end {
+            entries[eidx].end = r.start;
+            return;
+        }
+
+        // `entry` is completely inside `reserved`
+        //       └──────┘    e
+        //    └────────────┘ r
+        if r.start <= e.start && r.end >= e.end {
+            entries[eidx].start = 0;
+            entries[eidx].end = 0;
+            return;
+        }
+
+        // `reserved` is completely inside `entry`
+        //    └────────────┘ e
+        //       └──────┘    r
+        if e.start <= r.start && e.end >= r.end {
+            entries[eidx].end = r.start;
+
+            if self.num_entries >= MMAP_MAX_ENTRIES {
+                panic_no_graphics("Multiboot: self entry overflow while resolving overlaps");
+            }
+
+            entries[self.num_entries].start = r.end;
+            entries[self.num_entries].end = e.end;
+            self.num_entries += 1;
+            return;
+        }
+
+        panic!("unexpected range configuration");
+    }
+
+    fn cleanup_empty_ranges(&mut self) {
+        let old_num_entries = self.num_entries;
+
+        for eidx in 0..old_num_entries {
+            if self.entries[eidx].start == 0 && self.entries[eidx].end == 0 {
+                for midx in eidx + 1..old_num_entries {
+                    self.entries[midx - 1] = self.entries[midx];
+                }
+                self.num_entries -= 1;
+            }
+        }
+    }
+
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+    fn sort_ranges(&mut self) {
+        let entries = &mut self.entries;
+
+        for i in 1..self.num_entries {
+            let key = entries[i];
+            let mut j = i as isize - 1;
+
+            while j >= 0 && entries[j as usize].start > key.start {
+                entries[j as usize + 1] = entries[j as usize];
+                j -= 1;
+            }
+
+            entries[(j + 1) as usize] = key;
+        }
     }
 }
 
