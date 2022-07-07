@@ -294,9 +294,15 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
 
     let shdr_ranges =
         SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()).map(|(_, shdr)| {
-            let a = shdr.sh_addr as usize;
-            let s = shdr.sh_size as usize;
-            a..a + s
+            let mut addr = shdr.sh_addr as usize;
+            let base = crate::arch::KERNEL_BASE as usize;
+            let size = shdr.sh_size as usize;
+
+            if addr > base {
+                addr -= base;
+            }
+
+            addr..addr + size
         });
 
     mmap.remove_reserved(&[first_page, io_hole, fb_range]);

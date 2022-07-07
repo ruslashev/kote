@@ -156,8 +156,8 @@ impl MemoryMap {
     where
         RangeIter: IntoIterator<Item = Range<usize>> + Clone,
     {
-        for eidx in 0..self.num_entries {
-            for r in reserved.clone() {
+        for r in reserved.clone() {
+            for eidx in 0..self.num_entries {
                 self.resolve_overlaps(eidx, &r);
             }
         }
@@ -224,6 +224,7 @@ impl MemoryMap {
             entries[self.num_entries].start = r.end;
             entries[self.num_entries].end = e.end;
             self.num_entries += 1;
+
             return;
         }
 
