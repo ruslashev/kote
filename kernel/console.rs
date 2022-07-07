@@ -6,9 +6,9 @@ use core::cell::OnceCell;
 
 use crate::bootloader::BootloaderInfo;
 use crate::panic::panic_no_graphics;
-use crate::spinlock::SpinlockMutex;
+use crate::spinlock::Mutex;
 
-pub static CONSOLE: SpinlockMutex<OnceCell<Console>> = SpinlockMutex::new(OnceCell::new());
+pub static CONSOLE: Mutex<OnceCell<Console>> = Mutex::new(OnceCell::new());
 
 const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
 const FB_LUT: [[u32; 8]; 2usize.pow(8)] = compute_fb_lut();

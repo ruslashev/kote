@@ -7,7 +7,7 @@ use core::slice;
 use crate::arch;
 use crate::mm::pg_alloc;
 use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
-use crate::spinlock::SpinlockMutex;
+use crate::spinlock::Mutex;
 use crate::types::{Bytes, KiB, MiB};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
@@ -37,7 +37,7 @@ const WRITABLE: u64 = 1 << 1;
 const USER_ACCESSIBLE: u64 = 1 << 2;
 const HUGE: u64 = 1 << 7;
 
-static ROOT_KERN_DIR: SpinlockMutex<PageMapLevel4> = SpinlockMutex::new(PageMapLevel4::empty());
+static ROOT_KERN_DIR: Mutex<PageMapLevel4> = Mutex::new(PageMapLevel4::empty());
 
 pub struct PageMapLevel4 {
     addr: u64,

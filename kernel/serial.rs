@@ -3,11 +3,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::arch::uart;
-use crate::spinlock::SpinlockMutex;
+use crate::spinlock::Mutex;
 
 type SerialImpl = uart::Uart;
 
-pub static SERIAL_LOCK: SpinlockMutex<SerialImpl> = SpinlockMutex::new(SerialImpl {});
+pub static SERIAL_LOCK: Mutex<SerialImpl> = Mutex::new(SerialImpl {});
 
 pub trait Serial {
     fn init();

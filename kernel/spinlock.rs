@@ -39,6 +39,8 @@ pub struct SpinlockMutex<T: ?Sized> {
     data: UnsafeCell<T>,
 }
 
+pub type Mutex<T> = SpinlockMutex<T>;
+
 impl<T> SpinlockMutex<T> {
     pub const fn new(data: T) -> Self {
         SpinlockMutex {
