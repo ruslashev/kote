@@ -8,7 +8,7 @@ pub mod types;
 use crate::arch;
 use crate::bootloader::BootloaderInfo;
 
-pub fn init(info: &BootloaderInfo) -> usize {
+pub fn init(info: &mut BootloaderInfo) -> usize {
     arch::mmu::init();
 
     let page_infos_end = pg_alloc::init(info);

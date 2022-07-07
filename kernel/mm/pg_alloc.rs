@@ -82,11 +82,12 @@ impl From<PhysAddr> for &mut PageInfo {
     }
 }
 
-pub fn init(info: &BootloaderInfo) -> u64 {
+pub fn init(info: &mut BootloaderInfo) -> u64 {
     let (maxpages, start, size) = get_page_infos_region(info);
     let end = KERNEL_BASE + start + size;
 
     mmu::map_early_region(start, size, KERNEL_BASE);
+    info.free_areas.remove_reserved(&[start as usize .. (start + size) as usize]);
 
     map_framebuffer(end, info);
 
@@ -153,7 +154,7 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     kernel_end
 }
 
-fn map_framebuffer(page_infos_end: u64, info: &BootloaderInfo) {
+fn map_framebuffer(page_infos_end: u64, info: &mut BootloaderInfo) {
     let fb = &info.framebuffer;
     let phys = fb.addr;
     let size = fb.pitch * fb.height;
@@ -163,6 +164,9 @@ fn map_framebuffer(page_infos_end: u64, info: &BootloaderInfo) {
     let offset = virt - phys;
 
     mmu::map_early_region(phys, size, offset);
+
+    let reserved = phys as usize .. (phys + size) as usize;
+    info.free_areas.remove_reserved(&[reserved]);
 }
 
 pub fn alloc_page() -> &'static mut PageInfo {

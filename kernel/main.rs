@@ -36,8 +36,8 @@ mod types;
 pub extern "C" fn kmain() {
     serial::init();
 
-    let info = bootloader::get_info();
-    let fb_addr = mm::init(&info);
+    let mut info = bootloader::get_info();
+    let fb_addr = mm::init(&mut info);
 
     console::init(fb_addr, &info);
 
