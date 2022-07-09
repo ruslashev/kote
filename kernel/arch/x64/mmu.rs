@@ -6,7 +6,7 @@ use core::slice;
 
 use crate::arch;
 use crate::mm::pg_alloc;
-use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
+use crate::mm::types::{PhysAddr, RootPageDirOps, VirtAddr};
 use crate::spinlock::Mutex;
 use crate::types::{Bytes, KiB, MiB};
 
@@ -216,29 +216,29 @@ impl ToFrames for VirtAddr {
 }
 
 /// For early-stage allocation of regions, e.g. page infos and framebuffer
-pub fn map_early_region(start: u64, size: u64, offset_for_virt: u64) {
+pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
     extern "C" {
         fn pd();
     }
 
     println_serial!(
         "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large pages)",
-        offset_for_virt + start,
-        offset_for_virt + start + size,
-        start,
-        start + size,
-        size / PAGE_SIZE_LARGE as u64
+        start.0 + offset_for_virt,
+        start.0 + offset_for_virt + size,
+        start.0,
+        start.0 + size,
+        size / PAGE_SIZE_LARGE
     );
 
     let pd_ptr = pd as *mut u64;
+    let range = start.0..start.0 + size;
 
-    for phys in (start..start + size).step_by(PAGE_SIZE_LARGE) {
-        let virt = phys + offset_for_virt;
-        let virt = VirtAddr::from_u64(virt);
+    for phys in range.step_by(PAGE_SIZE_LARGE) {
+        let virt = VirtAddr(phys + offset_for_virt);
         let frames = virt.to_2m_page_frames();
 
         unsafe {
-            *pd_ptr.add(frames.pd_offset as usize) = phys | HUGE | WRITABLE | PRESENT;
+            *pd_ptr.add(frames.pd_offset as usize) = phys as u64 | HUGE | WRITABLE | PRESENT;
         }
     }
 }

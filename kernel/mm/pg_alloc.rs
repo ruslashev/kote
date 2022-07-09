@@ -7,7 +7,7 @@ use core::ptr::{addr_of, addr_of_mut, NonNull};
 
 use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
-use crate::mm::types::PhysAddr;
+use crate::mm::types::{Address, PhysAddr, VirtAddr};
 use crate::types::PowerOfTwoOps;
 
 static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
@@ -82,17 +82,17 @@ impl From<PhysAddr> for &mut PageInfo {
     }
 }
 
-pub fn init(info: &mut BootloaderInfo) -> u64 {
+pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     let (maxpages, start, size) = get_page_infos_region(info);
-    let end = KERNEL_BASE + start + size;
+    let end = VirtAddr::from(start + size);
 
-    mmu::map_early_region(start, size, KERNEL_BASE);
-    info.free_areas.remove_reserved(&[start as usize .. (start + size) as usize]);
+    mmu::map_early_region(start, size, KERNEL_BASE as usize);
+    info.free_areas.remove_reserved(&[start.0..start.0 + size]);
 
     map_framebuffer(end, info);
 
     unsafe {
-        PAGE_INFOS = core::slice::from_raw_parts_mut(start as *mut PageInfo, maxpages);
+        PAGE_INFOS = core::slice::from_raw_parts_mut(start.0 as *mut PageInfo, maxpages);
         PAGE_INFOS.fill_with(Default::default); // mark all as non-free
 
         FREE_PAGES = None;
@@ -123,17 +123,17 @@ pub fn init(info: &mut BootloaderInfo) -> u64 {
     end
 }
 
-fn get_page_infos_region(info: &BootloaderInfo) -> (usize, u64, u64) {
-    let kernel_end = get_kernel_end(info);
+fn get_page_infos_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
+    let kernel_end = get_kernel_end(info) as usize;
     let alloc_start = kernel_end.lpage_round_up();
 
     let mmap = &info.free_areas;
     let max_addr = mmap.entries[mmap.num_entries - 1].end;
     let maxpages = max_addr.div_ceil(mmu::PAGE_SIZE);
     let page_infos_bytes = maxpages * size_of::<PageInfo>();
-    let page_infos_rounded = (page_infos_bytes as u64).lpage_round_up();
+    let page_infos_rounded = page_infos_bytes.lpage_round_up();
 
-    (maxpages, alloc_start, page_infos_rounded)
+    (maxpages, PhysAddr(alloc_start), page_infos_rounded)
 }
 
 fn get_kernel_end(info: &BootloaderInfo) -> u64 {
@@ -154,18 +154,18 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     kernel_end
 }
 
-fn map_framebuffer(page_infos_end: u64, info: &mut BootloaderInfo) {
+fn map_framebuffer(page_infos_end: VirtAddr, info: &mut BootloaderInfo) {
     let fb = &info.framebuffer;
-    let phys = fb.addr;
+    let phys = PhysAddr::from_u64(fb.addr);
     let size = fb.pitch * fb.height;
-    let size = u64::from(size);
+    let size = usize::try_from(size).expect("framebuffer size overflows usize");
     let size = size.lpage_round_up();
     let virt = page_infos_end;
-    let offset = virt - phys;
+    let offset = virt.0 - phys.0;
 
     mmu::map_early_region(phys, size, offset);
 
-    let reserved = phys as usize .. (phys + size) as usize;
+    let reserved = phys.0..(phys + size).0;
     info.free_areas.remove_reserved(&[reserved]);
 }
 

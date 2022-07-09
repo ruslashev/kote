@@ -35,6 +35,22 @@ impl From<usize> for VirtAddr {
     }
 }
 
+impl core::ops::Add<usize> for PhysAddr {
+    type Output = Self;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl core::ops::Add<usize> for VirtAddr {
+    type Output = Self;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
 impl Address for PhysAddr {}
 
 impl Address for VirtAddr {}

@@ -5,6 +5,7 @@
 use core::cell::OnceCell;
 
 use crate::bootloader::BootloaderInfo;
+use crate::mm::types::VirtAddr;
 use crate::panic::panic_no_graphics;
 use crate::spinlock::Mutex;
 
@@ -26,7 +27,7 @@ pub struct Console {
 }
 
 impl Console {
-    fn new(fb_addr: usize, info: &BootloaderInfo) -> Self {
+    fn new(fb_addr: VirtAddr, info: &BootloaderInfo) -> Self {
         let font = Font::from_bytes(FONT);
         let width = info.framebuffer.width / font.width;
         let height = info.framebuffer.height / font.height as u32;
@@ -78,15 +79,15 @@ impl Console {
     fn shift_up(&mut self) {
         let bpp = self.fb.bytes_per_pixel as usize;
         let row = bpp * (self.width * self.font.width) as usize;
-        let src = (self.fb.addr + row * self.font.height) as *const u8;
-        let dst = self.fb.addr as *mut u8;
+        let src = (self.fb.addr.0 + row * self.font.height) as *const u8;
+        let dst = self.fb.addr.0 as *mut u8;
         let cnt = row * (self.fb.height as usize - self.font.height);
 
         unsafe {
             core::ptr::copy(src, dst, cnt);
         }
 
-        let botptr = self.fb.addr + cnt;
+        let botptr = self.fb.addr.0 + cnt;
         let length = row * self.font.height / 3;
         let bottom = unsafe { core::slice::from_raw_parts_mut(botptr as *mut u32, length) };
 
@@ -105,7 +106,7 @@ impl core::fmt::Write for Console {
 
 #[derive(Debug)]
 struct Framebuffer {
-    addr: usize,
+    addr: VirtAddr,
     width: u32,
     height: u32,
     pitch: u32,
@@ -113,7 +114,7 @@ struct Framebuffer {
 }
 
 impl Framebuffer {
-    fn new(fb_addr: usize, info: &BootloaderInfo) -> Self {
+    fn new(fb_addr: VirtAddr, info: &BootloaderInfo) -> Self {
         let fb = &info.framebuffer;
 
         Framebuffer {
@@ -127,7 +128,7 @@ impl Framebuffer {
 
     fn draw_pixel(&self, x: u32, y: u32, color: u32) {
         let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
-        let ptr = (self.addr + pos as usize) as *mut u32;
+        let ptr = (self.addr.0 + pos as usize) as *mut u32;
 
         unsafe {
             ptr.write(color);
@@ -141,7 +142,7 @@ impl Framebuffer {
 
         for byte in glyph {
             let pos = dy * self.pitch + x * self.bytes_per_pixel as u32;
-            let ptr = (self.addr + pos as usize) as *mut [u32; 8];
+            let ptr = (self.addr.0 + pos as usize) as *mut [u32; 8];
             let row = &FB_LUT[*byte as usize];
 
             unsafe {
@@ -174,7 +175,7 @@ impl Font {
     }
 }
 
-pub fn init(fb_addr: usize, info: &BootloaderInfo) {
+pub fn init(fb_addr: VirtAddr, info: &BootloaderInfo) {
     let cell = CONSOLE.guard();
     cell.set(Console::new(fb_addr, info)).unwrap();
 }
