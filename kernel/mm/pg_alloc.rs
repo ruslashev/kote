@@ -54,7 +54,7 @@ impl PageInfo {
         let index = offset / size_of::<PageInfo>();
         let addr = index * mmu::PAGE_SIZE;
 
-        PhysAddr::from(addr)
+        PhysAddr(addr)
     }
 
     pub fn inc_refc(&mut self) -> &mut Self {

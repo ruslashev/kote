@@ -53,7 +53,7 @@ impl fmt::Display for VirtAddr {
 
 impl From<PhysAddr> for VirtAddr {
     fn from(paddr: PhysAddr) -> Self {
-        VirtAddr::from(paddr.0 + KERNEL_BASE as usize)
+        VirtAddr(paddr.0 + KERNEL_BASE as usize)
     }
 }
 

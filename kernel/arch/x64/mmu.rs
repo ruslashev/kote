@@ -82,7 +82,7 @@ trait DirectoryEntry: SetScalar + Into<u64> {
     /// Get the address of directory this entry points to
     fn pointed_addr(self) -> PhysAddr {
         let paddr = self.into() & 0xffffffffff000;
-        PhysAddr::from(paddr as usize)
+        PhysAddr(paddr as usize)
     }
 
     fn pointed_vaddr(self) -> VirtAddr {
