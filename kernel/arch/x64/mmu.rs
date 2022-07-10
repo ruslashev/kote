@@ -221,13 +221,16 @@ pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
         fn pd();
     }
 
+    let num_pages = size / PAGE_SIZE_LARGE;
+
     println_serial!(
-        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large pages)",
+        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{})",
         start.0 + offset_for_virt,
         start.0 + offset_for_virt + size,
         start.0,
         start.0 + size,
-        size / PAGE_SIZE_LARGE
+        num_pages,
+        if num_pages > 1 { "s" } else { "" }
     );
 
     let pd_ptr = pd as *mut u64;
