@@ -82,17 +82,9 @@ impl From<PhysAddr> for &mut PageInfo {
     }
 }
 
-pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
-    let (maxpages, start, size) = get_page_infos_region(info);
-    let end = VirtAddr::from(start + size);
-
-    mmu::map_early_region(start, size, KERNEL_BASE as usize);
-    info.free_areas.remove_reserved(&[start.0..start.0 + size]);
-
-    map_framebuffer(end, info);
-
+pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
     unsafe {
-        PAGE_INFOS = core::slice::from_raw_parts_mut(start.0 as *mut PageInfo, maxpages);
+        PAGE_INFOS = core::slice::from_raw_parts_mut(area_start.0 as *mut PageInfo, maxpages);
         PAGE_INFOS.fill_with(Default::default); // mark all as non-free
 
         FREE_PAGES = None;
@@ -119,13 +111,10 @@ pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
             }
         }
     }
-
-    end
 }
 
-fn get_page_infos_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
-    let kernel_end = get_kernel_end(info) as usize;
-    let alloc_start = kernel_end.lpage_round_up();
+pub fn get_pg_alloc_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
+    let alloc_start = get_kernel_end(info).lpage_round_up();
 
     let mmap = &info.free_areas;
     let max_addr = mmap.entries[mmap.num_entries - 1].end;
@@ -133,7 +122,7 @@ fn get_page_infos_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
     let page_infos_bytes = maxpages * size_of::<PageInfo>();
     let page_infos_rounded = page_infos_bytes.lpage_round_up();
 
-    (maxpages, PhysAddr(alloc_start), page_infos_rounded)
+    (maxpages, PhysAddr::from_u64(alloc_start), page_infos_rounded)
 }
 
 fn get_kernel_end(info: &BootloaderInfo) -> u64 {
@@ -152,21 +141,6 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
     }
 
     kernel_end
-}
-
-fn map_framebuffer(page_infos_end: VirtAddr, info: &mut BootloaderInfo) {
-    let fb = &info.framebuffer;
-    let phys = PhysAddr::from_u64(fb.addr);
-    let size = fb.pitch * fb.height;
-    let size = usize::try_from(size).expect("framebuffer size overflows usize");
-    let size = size.lpage_round_up();
-    let virt = page_infos_end;
-    let offset = virt.0 - phys.0;
-
-    mmu::map_early_region(phys, size, offset);
-
-    let reserved = phys.0..(phys + size).0;
-    info.free_areas.remove_reserved(&[reserved]);
 }
 
 pub fn alloc_page() -> &'static mut PageInfo {
