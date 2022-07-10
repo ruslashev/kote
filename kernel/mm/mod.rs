@@ -26,7 +26,7 @@ fn map_page_alloc_region(info: &mut BootloaderInfo) -> (PhysAddr, VirtAddr, usiz
     let (maxpages, start, size) = pg_alloc::get_pg_alloc_region(info);
 
     mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
-    info.free_areas.remove_reserved(&[start.0..start.0 + size]);
+    info.free_areas.remove_range(start, size);
 
     (start + size, VirtAddr::from(start), maxpages)
 }
@@ -36,7 +36,7 @@ fn map_kernel_heap(start: PhysAddr, info: &mut BootloaderInfo) -> VirtAddr {
     let end = start + size;
 
     mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
-    info.free_areas.remove_reserved(&[start.0..start.0 + size]);
+    info.free_areas.remove_range(start, size);
 
     VirtAddr::from(end)
 }
@@ -52,6 +52,5 @@ fn map_framebuffer(start: VirtAddr, info: &mut BootloaderInfo) {
 
     mmu::map_early_region(phys, size, offset);
 
-    let reserved = phys.0..(phys + size).0;
-    info.free_areas.remove_reserved(&[reserved]);
+    info.free_areas.remove_range(phys, size);
 }

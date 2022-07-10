@@ -9,6 +9,7 @@ use core::ops::Range;
 use core::{slice, str};
 
 use crate::elf::Elf64Shdr;
+use crate::mm::types::PhysAddr;
 use crate::panic::panic_no_graphics;
 use crate::types::PowerOfTwoOps;
 
@@ -165,6 +166,10 @@ impl MemoryMap {
         self.cleanup_empty_ranges();
 
         self.sort_ranges();
+    }
+
+    pub fn remove_range(&mut self, start: PhysAddr, size: usize) {
+        self.remove_reserved(&[start.0..start.0 + size]);
     }
 
     fn resolve_overlaps(&mut self, eidx: usize, reserved: &Range<usize>) {
