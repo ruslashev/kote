@@ -10,7 +10,7 @@ use crate::arch::{self, mmu};
 use crate::bootloader::BootloaderInfo;
 use crate::types::PowerOfTwoOps;
 
-pub fn init(info: &mut BootloaderInfo) -> types::VirtAddr {
+pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     mmu::init();
 
     let (heap_start, pg_alloc_start, maxpages) = map_page_alloc_region(info);

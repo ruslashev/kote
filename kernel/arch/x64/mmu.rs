@@ -340,7 +340,7 @@ impl RootPageDirOps for PageMapLevel4 {
         PageMapLevel4::new(phys.0 as u64)
     }
 
-    fn switch_to_this(self) {
+    fn switch_to_this(&self) {
         let phys = self.addr;
         write_reg!(cr3, phys);
     }
