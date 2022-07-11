@@ -89,7 +89,7 @@ impl VirtAddr {
     }
 }
 
-pub trait InterruptFrameOps: fmt::Display {
+pub trait RegisterFrameOps: fmt::Display {
     fn set_program_counter(&mut self, addr: usize);
 }
 

@@ -188,7 +188,7 @@ impl fmt::Display for ExceptionFrame {
     }
 }
 
-impl crate::mm::types::InterruptFrameOps for ExceptionFrame {
+impl crate::mm::types::RegisterFrameOps for ExceptionFrame {
     fn set_program_counter(&mut self, addr: usize) {
         self.return_rip = addr as u64;
     }
