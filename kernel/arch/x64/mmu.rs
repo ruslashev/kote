@@ -32,10 +32,10 @@ pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
 const ENTRIES: usize = 512;
 
-const PRESENT: u64 = 1 << 0;
-const WRITABLE: u64 = 1 << 1;
-const USER_ACCESSIBLE: u64 = 1 << 2;
-const HUGE: u64 = 1 << 7;
+pub const PRESENT: u64 = 1 << 0;
+pub const WRITABLE: u64 = 1 << 1;
+pub const USER_ACCESSIBLE: u64 = 1 << 2;
+pub const HUGE: u64 = 1 << 7;
 
 static ROOT_KERN_DIR: Mutex<PageMapLevel4> = Mutex::new(PageMapLevel4::empty());
 

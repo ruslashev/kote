@@ -4,8 +4,9 @@
 
 use core::fmt;
 
-use crate::arch::KERNEL_BASE;
-use crate::mm::pg_alloc::PageInfo;
+use crate::arch::{mmu, KERNEL_BASE};
+use crate::mm::pg_alloc::{self, PageInfo};
+use crate::types::PowerOfTwoOps;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PhysAddr(pub usize);
@@ -98,4 +99,21 @@ pub trait RootPageDirOps {
     fn switch_to_this(&self);
     unsafe fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
     unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr);
+
+    fn alloc_range(&mut self, addr: VirtAddr, size: usize) {
+        let beg = addr.0.page_round_down();
+        let end = addr.0.checked_add(size).unwrap().page_round_up();
+
+        for page_addr in (beg..end).step_by(mmu::PAGE_SIZE) {
+            let page = pg_alloc::alloc_page();
+
+            unsafe {
+                self.map_page_at_addr(
+                    page,
+                    VirtAddr(page_addr),
+                    mmu::WRITABLE | mmu::USER_ACCESSIBLE,
+                );
+            }
+        }
+    }
 }
