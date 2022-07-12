@@ -306,33 +306,6 @@ pub fn get_or_create_page(addr: VirtAddr, root: &mut PageMapLevel4) -> VirtAddr 
     unsafe { walk_root_dir(addr, root, true).unwrap().pointed_vaddr() }
 }
 
-pub unsafe fn unmap_page_at_addr(addr: VirtAddr, root: &mut PageMapLevel4) {
-    if let Some(mut pte) = walk_root_dir(addr, root, false) {
-        pte.pointed_addr().into_page().dec_refc();
-        pte.set_scalar(pte.scalar & !PRESENT);
-        arch::asm::invalidate_dcache(addr);
-    }
-}
-
-pub unsafe fn map_page_at_addr(
-    mut page: pg_alloc::PageInfo,
-    addr: VirtAddr,
-    root: &mut PageMapLevel4,
-    perms: u64,
-) {
-    if let Some(mut pte) = walk_root_dir(addr, root, true) {
-        page.inc_refc();
-
-        if pte.present() {
-            unmap_page_at_addr(addr, root);
-        }
-
-        let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
-
-        pte.set_scalar(addr);
-    }
-}
-
 impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();
@@ -343,5 +316,32 @@ impl RootPageDirOps for PageMapLevel4 {
     fn switch_to_this(&self) {
         let phys = self.addr;
         write_reg!(cr3, phys);
+    }
+
+    unsafe fn map_page_at_addr(
+        &mut self,
+        page: &mut pg_alloc::PageInfo,
+        addr: VirtAddr,
+        perms: u64,
+    ) {
+        if let Some(mut pte) = walk_root_dir(addr, self, true) {
+            page.inc_refc();
+
+            if pte.present() {
+                self.unmap_page_at_addr(addr);
+            }
+
+            let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
+
+            pte.set_scalar(addr);
+        }
+    }
+
+    unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
+        if let Some(mut pte) = walk_root_dir(addr, self, false) {
+            pte.pointed_addr().into_page().dec_refc();
+            pte.set_scalar(pte.scalar & !PRESENT);
+            arch::asm::invalidate_dcache(addr);
+        }
     }
 }

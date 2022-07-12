@@ -96,4 +96,6 @@ pub trait RegisterFrameOps: fmt::Display {
 pub trait RootPageDirOps {
     fn new() -> Self;
     fn switch_to_this(&self);
+    unsafe fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
+    unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr);
 }
