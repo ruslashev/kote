@@ -118,6 +118,7 @@ impl Exception {
  * │              r15               │ <- New RSP
  * └────────────────────────────────┘
  */
+#[derive(Default)]
 #[repr(C, packed)]
 pub struct ExceptionFrame {
     pub r15: u64,
@@ -191,6 +192,10 @@ impl fmt::Display for ExceptionFrame {
 impl crate::mm::types::RegisterFrameOps for ExceptionFrame {
     fn set_program_counter(&mut self, addr: usize) {
         self.return_rip = addr as u64;
+    }
+
+    fn set_stack_pointer(&mut self, addr: usize) {
+        self.return_rsp = addr as u64;
     }
 }
 

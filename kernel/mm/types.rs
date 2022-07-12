@@ -92,6 +92,7 @@ impl VirtAddr {
 
 pub trait RegisterFrameOps: fmt::Display {
     fn set_program_counter(&mut self, addr: usize);
+    fn set_stack_pointer(&mut self, addr: usize);
 }
 
 pub trait RootPageDirOps {
