@@ -101,7 +101,7 @@ pub trait RootPageDirOps {
     unsafe fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
     unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr);
 
-    fn alloc_range(&mut self, addr: VirtAddr, size: usize) {
+    fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: u64) {
         let beg = addr.0.page_round_down();
         let end = addr.0.checked_add(size).unwrap().page_round_up();
 
@@ -109,11 +109,7 @@ pub trait RootPageDirOps {
             let page = pg_alloc::alloc_page();
 
             unsafe {
-                self.map_page_at_addr(
-                    page,
-                    VirtAddr(page_addr),
-                    mmu::WRITABLE | mmu::USER_ACCESSIBLE,
-                );
+                self.map_page_at_addr(page, VirtAddr(page_addr), perms);
             }
         }
     }

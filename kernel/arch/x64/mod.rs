@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use crate::mm::types::VirtAddr;
+
 #[macro_use]
 mod asm;
 pub mod backtrace;
@@ -12,6 +14,9 @@ pub mod uart;
 pub const KERNEL_BASE: u64 = 0xffffffff80000000;
 
 pub const HEAP_SIZE: usize = 1 * mmu::PAGE_SIZE_LARGE;
+
+pub const USER_STACK_START: VirtAddr = VirtAddr(0x0000001000000000);
+pub const USER_STACK_SIZE: usize = 4 * mmu::PAGE_SIZE;
 
 const GDT_KERN_CODE: u8 = 8;
 const GDT_KERN_DATA: u8 = 16;
