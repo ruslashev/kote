@@ -23,7 +23,6 @@ mod arch;
 
 mod bootloader;
 mod console;
-mod dwarf;
 mod elf;
 mod mm;
 mod panic;
