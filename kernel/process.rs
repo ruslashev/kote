@@ -21,9 +21,8 @@ pub struct Process {
 
 impl Process {
     fn from_elf(bytes: &[u8]) -> Self {
-        let root_dir = arch::RootPageDir::new();
         let mut process = Process {
-            root_dir,
+            root_dir: arch::RootPageDir::new(),
             registers: arch::RegisterFrame::default(),
         };
 
@@ -34,6 +33,7 @@ impl Process {
             arch::USER_STACK_SIZE,
             arch::mmu::WRITABLE | arch::mmu::USER_ACCESSIBLE,
         );
+
         process
             .registers
             .set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
@@ -45,5 +45,7 @@ impl Process {
 }
 
 pub fn init() {
-    println!("{:x?}", &LOOP_ELF[0..4]);
+    let mut processes = PROCESSES.guard();
+
+    processes[0] = Some(Process::from_elf(LOOP_ELF));
 }
