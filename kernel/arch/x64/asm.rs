@@ -41,7 +41,7 @@ pub mod io {
 
 pub fn invalidate_dcache(addr: VirtAddr) {
     unsafe {
-        asm!("invlpg {}",
+        asm!("invlpg [{}]",
             in(reg) addr.0,
             options(nostack, preserves_flags));
     }
@@ -86,7 +86,7 @@ macro_rules! write_reg {
 
             let val: u64 = $val;
 
-            asm!(concat!("mov ", stringify!($reg), " {}"),
+            asm!(concat!("mov ", stringify!($reg), ", {}"),
                 in(reg) val,
                 options(nomem, nostack));
         }
