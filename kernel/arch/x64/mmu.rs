@@ -6,7 +6,7 @@ use core::slice;
 
 use crate::arch;
 use crate::mm::pg_alloc;
-use crate::mm::types::{PhysAddr, RootPageDirOps, VirtAddr};
+use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
 use crate::spinlock::Mutex;
 use crate::types::{Bytes, KiB, MiB};
 
@@ -82,7 +82,7 @@ trait DirectoryEntry: SetScalar + Into<u64> {
     /// Get the address of directory this entry points to
     fn pointed_addr(self) -> PhysAddr {
         let paddr = self.into() & 0xffffffffff000;
-        PhysAddr(paddr as usize)
+        PhysAddr::from_u64(paddr)
     }
 
     fn pointed_vaddr(self) -> VirtAddr {
@@ -96,7 +96,7 @@ trait DirectoryEntry: SetScalar + Into<u64> {
         unsafe { slice::from_raw_parts_mut(ptr, ENTRIES) }
     }
 
-    unsafe fn create_entry(&mut self) {
+    fn create_entry(&mut self) {
         let dir = pg_alloc::alloc_page().inc_refc();
         let addr = dir.to_physaddr().0 as u64;
 
@@ -246,11 +246,7 @@ pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
     }
 }
 
-unsafe fn walk_root_dir(
-    addr: VirtAddr,
-    root: &mut PageMapLevel4,
-    create: bool,
-) -> Option<PageTableEntry> {
+fn walk_root_dir(addr: VirtAddr, root: &mut PageMapLevel4, create: bool) -> Option<PageTableEntry> {
     let frames = addr.to_4k_page_frames();
     let mut pml4e = root.entries[frames.pml4_offs];
 
@@ -299,17 +295,17 @@ unsafe fn walk_root_dir(
 }
 
 pub fn is_page_present(addr: VirtAddr, root: &mut PageMapLevel4) -> bool {
-    unsafe { walk_root_dir(addr, root, false).is_some() }
+    walk_root_dir(addr, root, false).is_some()
 }
 
 pub fn get_or_create_page(addr: VirtAddr, root: &mut PageMapLevel4) -> VirtAddr {
-    unsafe { walk_root_dir(addr, root, true).unwrap().pointed_vaddr() }
+    walk_root_dir(addr, root, true).unwrap().pointed_vaddr()
 }
 
 impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();
-        let phys = unsafe { dir.to_physaddr() };
+        let phys = dir.to_physaddr();
         PageMapLevel4::new(phys.0 as u64)
     }
 
@@ -318,12 +314,7 @@ impl RootPageDirOps for PageMapLevel4 {
         write_reg!(cr3, phys);
     }
 
-    unsafe fn map_page_at_addr(
-        &mut self,
-        page: &mut pg_alloc::PageInfo,
-        addr: VirtAddr,
-        perms: u64,
-    ) {
+    fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
         if let Some(mut pte) = walk_root_dir(addr, self, true) {
             page.inc_refc();
 
@@ -337,9 +328,9 @@ impl RootPageDirOps for PageMapLevel4 {
         }
     }
 
-    unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
+    fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
         if let Some(mut pte) = walk_root_dir(addr, self, false) {
-            pte.pointed_addr().into_page().dec_refc();
+            pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar & !PRESENT);
             arch::asm::invalidate_dcache(addr);
         }

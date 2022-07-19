@@ -79,8 +79,8 @@ impl PhysAddr {
         self.into()
     }
 
-    pub fn into_page(self) -> &'static mut PageInfo {
-        self.into()
+    pub fn dec_page_refc(self) {
+        pg_alloc::dec_page_refc(self);
     }
 }
 
@@ -98,8 +98,8 @@ pub trait RegisterFrameOps: fmt::Display {
 pub trait RootPageDirOps {
     fn new() -> Self;
     fn switch_to_this(&self);
-    unsafe fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
-    unsafe fn unmap_page_at_addr(&mut self, addr: VirtAddr);
+    fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
+    fn unmap_page_at_addr(&mut self, addr: VirtAddr);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: u64) {
         let beg = addr.0.page_round_down();
@@ -108,9 +108,7 @@ pub trait RootPageDirOps {
         for page_addr in (beg..end).step_by(mmu::PAGE_SIZE) {
             let page = pg_alloc::alloc_page();
 
-            unsafe {
-                self.map_page_at_addr(page, VirtAddr(page_addr), perms);
-            }
+            self.map_page_at_addr(page, VirtAddr(page_addr), perms);
         }
     }
 }

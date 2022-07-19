@@ -8,10 +8,11 @@ use core::ptr::{addr_of, addr_of_mut, NonNull};
 use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
 use crate::mm::types::{Address, PhysAddr, VirtAddr};
+use crate::spinlock::Mutex;
 use crate::types::PowerOfTwoOps;
 
-static mut PAGE_INFOS: &mut [PageInfo] = &mut [];
-static mut FREE_PAGES: Option<NonNull<PageInfo>> = None;
+static PAGE_INFOS: Mutex<&mut [PageInfo]> = Mutex::new(&mut []);
+static FREE_PAGES: Mutex<Option<NonNull<PageInfo>>> = Mutex::new(None);
 
 #[derive(Default)]
 pub struct PageInfo {
@@ -20,35 +21,36 @@ pub struct PageInfo {
 }
 
 impl PageInfo {
-    unsafe fn alloc() -> Option<&'static mut PageInfo> {
-        match FREE_PAGES {
-            Some(mut head) => {
-                let pgref = head.as_mut();
-                let vaddr = pgref.to_physaddr().into_vaddr();
-                let region = vaddr.into_slice_mut(mmu::PAGE_SIZE);
+    fn alloc() -> Option<&'static mut PageInfo> {
+        let mut freep = FREE_PAGES.guard();
+        let mut head = (*freep)?;
+        let pgref = unsafe { head.as_mut() };
 
-                region.fill(0);
-
-                FREE_PAGES = pgref.next;
-
-                pgref.next = None;
-
-                Some(pgref)
-            }
-            None => None,
+        unsafe {
+            let vaddr = pgref.to_physaddr().into_vaddr();
+            let region = vaddr.into_slice_mut(mmu::PAGE_SIZE);
+            region.fill(0);
         }
+
+        *freep = pgref.next;
+
+        pgref.next = None;
+
+        Some(pgref)
     }
 
-    unsafe fn free(&mut self) {
+    fn free(&mut self) {
         assert!(self.refc == 0, "free_page: page is used");
+        let mut freep = FREE_PAGES.guard();
 
-        self.next = FREE_PAGES;
+        self.next = *freep;
 
-        FREE_PAGES = Some(NonNull::new_unchecked(self as *mut _));
+        *freep = unsafe { Some(NonNull::new_unchecked(self as *mut _)) };
     }
 
-    pub unsafe fn to_physaddr(&self) -> PhysAddr {
-        let base = addr_of!(PAGE_INFOS[0]) as usize;
+    pub fn to_physaddr(&self) -> PhysAddr {
+        let infos = PAGE_INFOS.guard();
+        let base = addr_of!(infos[0]) as usize;
         let this = addr_of!(*self) as usize;
         let offset = this - base;
         let index = offset / size_of::<PageInfo>();
@@ -65,30 +67,26 @@ impl PageInfo {
     pub fn dec_refc(&mut self) -> &mut Self {
         self.refc -= 1;
         if self.refc == 0 {
-            unsafe {
-                self.free();
-            }
+            self.free();
         }
         self
     }
 }
 
-impl From<PhysAddr> for &mut PageInfo {
-    fn from(paddr: PhysAddr) -> Self {
-        unsafe {
-            let idx = paddr.0 / mmu::PAGE_SIZE;
-            &mut PAGE_INFOS[idx]
-        }
-    }
+pub fn dec_page_refc(addr: PhysAddr) {
+    let idx = addr.0 / mmu::PAGE_SIZE;
+    let mut infos = PAGE_INFOS.guard();
+    infos[idx].dec_refc();
 }
 
 pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
-    unsafe {
-        PAGE_INFOS = core::slice::from_raw_parts_mut(area_start.0 as *mut PageInfo, maxpages);
-        PAGE_INFOS.fill_with(Default::default); // mark all as non-free
+    let mut infos = PAGE_INFOS.guard();
+    let mut freep = FREE_PAGES.guard();
 
-        FREE_PAGES = None;
-    }
+    *infos = unsafe { core::slice::from_raw_parts_mut(area_start.0 as *mut PageInfo, maxpages) };
+    infos.fill_with(Default::default); // mark all as non-free
+
+    *freep = None;
 
     println_serial!(
         "Initializing page information list at {:x?}..{:x?}...",
@@ -105,14 +103,12 @@ pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
         for pg in (pg_start..pg_end).into_iter().step_by(mmu::PAGE_SIZE) {
             let index = pg / mmu::PAGE_SIZE;
 
-            unsafe {
-                if PAGE_INFOS[index].next.is_some() {
-                    continue;
-                }
-
-                PAGE_INFOS[index].next = FREE_PAGES;
-                FREE_PAGES = Some(NonNull::new_unchecked(addr_of_mut!(PAGE_INFOS[index])));
+            if infos[index].next.is_some() {
+                continue;
             }
+
+            infos[index].next = *freep;
+            *freep = unsafe { Some(NonNull::new_unchecked(addr_of_mut!(infos[index]))) };
         }
     }
 }
@@ -149,5 +145,5 @@ fn get_kernel_end(info: &BootloaderInfo) -> u64 {
 
 pub fn alloc_page() -> &'static mut PageInfo {
     // This should not die on OOM
-    unsafe { PageInfo::alloc().expect("pg_alloc: out of memory") }
+    PageInfo::alloc().expect("pg_alloc: out of memory")
 }
