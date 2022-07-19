@@ -48,8 +48,8 @@ impl PageInfo {
     }
 
     pub unsafe fn to_physaddr(&self) -> PhysAddr {
-        let base = addr_of!(PAGE_INFOS) as usize;
-        let this = addr_of!(self) as usize;
+        let base = addr_of!(PAGE_INFOS[0]) as usize;
+        let this = addr_of!(*self) as usize;
         let offset = this - base;
         let index = offset / size_of::<PageInfo>();
         let addr = index * mmu::PAGE_SIZE;
@@ -90,7 +90,11 @@ pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
         FREE_PAGES = None;
     }
 
-    println_serial!("Initializing page information list...");
+    println_serial!(
+        "Initializing page information list at {:x?}..{:x?}...",
+        area_start.0,
+        area_start.0 + maxpages * size_of::<PageInfo>()
+    );
 
     let mmap = &info.free_areas;
     for eidx in 0..mmap.num_entries {
