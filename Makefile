@@ -35,6 +35,7 @@ QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial
 
 KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
+USER_CRATES_DEPS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
 USERSPACE_BUNDLE = $(BUILDDIR)/loop
 
 ASRC = start.s interrupts.s
@@ -73,12 +74,12 @@ $(KERNLIB): $(RUSTDIR) $(USERSPACE_BUNDLE)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p kernel
 
-$(USERSPACE_BUNDLE): $(USERSPACE_CRATES)
-	@$(LN) $(shell pwd)/$(RBUILDDIR)/$< $@
+$(USERSPACE_BUNDLE): $(USER_CRATES_DEPS)
+	@$(LN) $(shell pwd)/$< $@
 
-$(USERSPACE_CRATES): $(RUSTDIR)
+$(USER_CRATES_DEPS): $(RUSTDIR)
 	@$(call ECHO, cargo)
-	@$(CARGO) build $(CFLAGS) -p $@
+	@$(CARGO) build $(CFLAGS) -p $(notdir $@)
 
 $(OBJDIR) $(RUSTDIR) $(DISASDIR):
 	@mkdir -p $@
