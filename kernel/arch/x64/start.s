@@ -156,7 +156,7 @@ map_pages:
 %define Addr (1 << 21) ; 2 MiB
 %define Huge (1 << 7)
 %define WrPr (1 << 1) | (1 << 0) ; Writable and present
-	; Identity mapping: 0x0..0x400000 -> 0x0..0x400000; 2 entries, 2 MiB each.
+	; Identity mapping: 0x0..0x800000 -> 0x0..0x800000; 4 entries, 2 MiB each.
 	; pml4[0] -> pdpt
 	mov eax, RELOC(pdpt)
 	or eax, WrPr
@@ -167,11 +167,13 @@ map_pages:
 	or eax, WrPr
 	mov [RELOC(pdpt)], eax
 
-	; pd[0], pd[1] -> 0x00000000..0x00400000
+	; pd[0], pd[1] -> 0x00000000..0x00800000
 	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
 	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd) + 2 * 8], (2 * Addr) | Huge | WrPr
+	mov dword [RELOC(pd) + 3 * 8], (3 * Addr) | Huge | WrPr
 
-	; Kernel higher half mapping: 0xffffff800000000..0xffffff8000400000 -> 0x0..0x400000
+	; Kernel higher half mapping: 0xffffff800000000..0xffffff8000800000 -> 0x0..0x800000
 	; pml4[511] -> pdpt, map at -512 GiB
 	mov eax, RELOC(pdpt)
 	or eax, WrPr
