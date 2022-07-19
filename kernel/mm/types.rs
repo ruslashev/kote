@@ -58,13 +58,13 @@ impl Address for VirtAddr {}
 
 impl fmt::Display for PhysAddr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:x?}", &self)
+        write!(f, "{:x?}", self)
     }
 }
 
 impl fmt::Display for VirtAddr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:x?}", &self)
+        write!(f, "{:x?}", self)
     }
 }
 
