@@ -11,7 +11,7 @@ pub mod interrupts;
 pub mod mmu;
 pub mod uart;
 
-pub const KERNEL_BASE: u64 = 0xffffffff80000000;
+pub const KERNEL_BASE: u64 = 0xffffff8000000000;
 
 pub const HEAP_SIZE: usize = 1 * mmu::PAGE_SIZE_LARGE;
 

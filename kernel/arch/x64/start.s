@@ -12,7 +12,7 @@ extern kmain
 extern __sbss
 extern __ebss
 
-%define KERNEL_BASE 0xffffffff80000000
+%define KERNEL_BASE 0xffffff8000000000
 %define KERNEL_STACK_SZ 4096 * 4
 
 %define RELOC(x) (x - KERNEL_BASE)
@@ -171,17 +171,11 @@ map_pages:
 	mov dword [RELOC(pd) + 0 * 8], (0 * Addr) | Huge | WrPr
 	mov dword [RELOC(pd) + 1 * 8], (1 * Addr) | Huge | WrPr
 
-	; Kernel higher half mapping: 0xffffffff80000000..0xffffffff80400000 -> 0x0..0x400000
-	; pml4[511] -> pdpt
+	; Kernel higher half mapping: 0xffffff800000000..0xffffff8000400000 -> 0x0..0x400000
+	; pml4[511] -> pdpt, map at -512 GiB
 	mov eax, RELOC(pdpt)
 	or eax, WrPr
 	mov [RELOC(pml4) + 511 * 8], eax
-
-	; pdpt[510] -> pd, map at -2 GiB
-	mov eax, RELOC(pd)
-	or eax, WrPr
-	mov [RELOC(pdpt) + 510 * 8], eax
-	ret
 
 setup_long_mode:
 	; Enable Physical Address Extension
@@ -212,7 +206,7 @@ enable_paging:
 
 bits 64
 start64_low:
-	lgdt [gdt.ptr]
+	lgdt [RELOC(gdt.ptr)]
 
 	mov rax, start64
 	jmp rax

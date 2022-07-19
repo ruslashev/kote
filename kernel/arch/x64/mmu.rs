@@ -17,7 +17,7 @@ pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
  * ┌───────────────────────────────┐ 0xffffffffffffffff
  * │                               │
  * │                               │
- * │  Identity mapping for kernel  │ 0xffffffff80000000 KERNEL_BASE
+ * │  Identity mapping for kernel  │ 0xffffff8000000000 KERNEL_BASE
  * ├───────────────────────────────┤
  * │                               │
  * │             TODO              │
