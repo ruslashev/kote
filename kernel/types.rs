@@ -22,32 +22,41 @@ macro_rules! impl_po2_ops {
     ( $( $type:ident )+ ) => {
         $(
 impl PowerOfTwoOps for $type {
+    #[inline]
     fn is_po2_aligned(self, po2: Self) -> bool {
         self & (po2 - 1) == 0
     }
+    #[inline]
     fn po2_round_down(self, po2: Self) -> Self {
         self & !(po2 - 1)
     }
+    #[inline]
     fn po2_round_up(self, po2: Self) -> Self {
         (self + po2 - 1) & !(po2 - 1)
     }
 
+    #[inline]
     fn is_page_aligned(self) -> bool {
         self.is_po2_aligned(PAGE_SIZE as Self)
     }
+    #[inline]
     fn page_round_down(self) -> Self {
         self.po2_round_down(PAGE_SIZE as Self)
     }
+    #[inline]
     fn page_round_up(self) -> Self {
         self.po2_round_up(PAGE_SIZE as Self)
     }
 
+    #[inline]
     fn is_lpage_aligned(self) -> bool {
         self.is_po2_aligned(PAGE_SIZE_LARGE as Self)
     }
+    #[inline]
     fn lpage_round_down(self) -> Self {
         self.po2_round_down(PAGE_SIZE_LARGE as Self)
     }
+    #[inline]
     fn lpage_round_up(self) -> Self {
         self.po2_round_up(PAGE_SIZE_LARGE as Self)
     }
