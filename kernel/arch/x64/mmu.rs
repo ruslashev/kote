@@ -54,6 +54,13 @@ impl PageMapLevel4 {
             slice::from_raw_parts(ptr, ENTRIES)
         }
     }
+
+    fn as_slice_mut<'a>(&mut self) -> &'a mut [PageMapLevel4Entry] {
+        unsafe {
+            let ptr = self.addr as *mut PageMapLevel4Entry;
+            slice::from_raw_parts_mut(ptr, ENTRIES)
+        }
+    }
 }
 
 #[repr(C, packed)]
@@ -323,4 +330,9 @@ impl RootPageDirOps for PageMapLevel4 {
             arch::asm::invalidate_dcache(addr);
         }
     }
+}
+
+pub fn prepare_userspace_root_dir(root_dir: &mut PageMapLevel4) {
+    // Temporary
+    root_dir.as_slice_mut().copy_from_slice(ROOT_KERN_DIR.guard().as_slice());
 }

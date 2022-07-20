@@ -26,6 +26,8 @@ impl Process {
             registers: arch::RegisterFrame::default(),
         };
 
+        arch::mmu::prepare_userspace_root_dir(&mut process.root_dir);
+
         process.root_dir.switch_to_this();
 
         process.root_dir.alloc_range(
