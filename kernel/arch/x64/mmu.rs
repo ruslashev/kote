@@ -40,31 +40,19 @@ pub const HUGE: u64 = 1 << 7;
 static ROOT_KERN_DIR: Mutex<PageMapLevel4> = Mutex::new(PageMapLevel4::empty());
 
 pub struct PageMapLevel4 {
-    addr: u64,
-    entries: &'static mut [PageMapLevel4Entry],
+    addr: usize,
 }
 
 impl PageMapLevel4 {
     const fn empty() -> Self {
-        PageMapLevel4 {
-            addr: 0,
-            entries: &mut [],
+        Self { addr: 0 }
+    }
+
+    fn as_slice<'a>(&self) -> &'a [PageMapLevel4Entry] {
+        unsafe {
+            let ptr = self.addr as *const PageMapLevel4Entry;
+            slice::from_raw_parts(ptr, ENTRIES)
         }
-    }
-
-    fn new(addr: u64) -> Self {
-        let entries = unsafe {
-            let addr = addr as *mut PageMapLevel4Entry;
-            slice::from_raw_parts_mut(addr, ENTRIES)
-        };
-
-        Self { addr, entries }
-    }
-
-    fn clear(&mut self) {
-        let zero_entry = PageMapLevel4Entry { scalar: 0 };
-
-        self.entries.fill(zero_entry);
     }
 }
 
@@ -166,10 +154,10 @@ impl DirectoryEntry for PageTableEntry {
 pub fn init() {
     // Defined in start.s
     extern "C" {
-        static pml4: u64;
+        fn pml4();
     }
 
-    *ROOT_KERN_DIR.guard().data = PageMapLevel4::new(unsafe { pml4 });
+    *ROOT_KERN_DIR.guard() = PageMapLevel4 { addr: pml4 as usize };
 }
 
 #[derive(Debug)]
@@ -248,7 +236,7 @@ pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
 
 fn walk_root_dir(addr: VirtAddr, root: &mut PageMapLevel4, create: bool) -> Option<PageTableEntry> {
     let frames = addr.to_4k_page_frames();
-    let mut pml4e = root.entries[frames.pml4_offs];
+    let mut pml4e = root.as_slice()[frames.pml4_offs];
 
     if !pml4e.present() {
         if create {
@@ -306,11 +294,11 @@ impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();
         let phys = dir.to_physaddr();
-        PageMapLevel4::new(phys.0 as u64)
+        PageMapLevel4 { addr: phys.0 }
     }
 
     fn switch_to_this(&self) {
-        let phys = self.addr;
+        let phys = self.addr as u64;
         write_reg!(cr3, phys);
     }
 
