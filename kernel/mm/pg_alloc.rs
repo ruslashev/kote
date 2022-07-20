@@ -97,10 +97,15 @@ pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
     let mmap = &info.free_areas;
     for eidx in (0..mmap.num_entries).rev() {
         let Region { start, end } = mmap.entries[eidx];
-        let pg_start = start.page_round_down();
-        let pg_end = end.page_round_up();
 
-        for pg in (pg_start..pg_end).into_iter().step_by(mmu::PAGE_SIZE).rev() {
+        if end - start < mmu::PAGE_SIZE {
+            continue;
+        }
+
+        let pg_start = start.page_round_up();
+        let pg_end = end.page_round_down();
+
+        for pg in (pg_start..pg_end).step_by(mmu::PAGE_SIZE).rev() {
             let index = pg / mmu::PAGE_SIZE;
 
             if infos[index].next.is_some() {
