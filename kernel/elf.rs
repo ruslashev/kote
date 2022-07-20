@@ -127,21 +127,21 @@ pub fn load(process: &mut Process, elf: &[u8]) {
 
     input = &elf[e_phoff as usize..];
     for _ in 0..e_phnum {
-        load_program_header(process, input, elf);
+        load_program_header(process, &mut input, elf);
     }
 
     process.registers.set_program_counter(e_entry as usize);
 }
 
-fn load_program_header(process: &mut Process, mut input: &[u8], elf: &[u8]) {
-    let p_type = read_int!(Elf64Word, input);
-    let p_flags = read_int!(Elf64Word, input);
-    let p_offset = read_int!(Elf64Off, input);
-    let p_vaddr = read_int!(Elf64Addr, input);
-    let _p_paddr = read_int!(Elf64Addr, input);
-    let p_filesz = read_int!(Elf64Xword, input);
-    let p_memsz = read_int!(Elf64Xword, input);
-    let _p_align = read_last!(Elf64Xword, input);
+fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
+    let p_type = read_int!(Elf64Word, *input);
+    let p_flags = read_int!(Elf64Word, *input);
+    let p_offset = read_int!(Elf64Off, *input);
+    let p_vaddr = read_int!(Elf64Addr, *input);
+    let _p_paddr = read_int!(Elf64Addr, *input);
+    let p_filesz = read_int!(Elf64Xword, *input);
+    let p_memsz = read_int!(Elf64Xword, *input);
+    let _p_align = read_int!(Elf64Xword, *input);
 
     if p_type != PT_LOAD {
         return;
