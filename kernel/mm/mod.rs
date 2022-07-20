@@ -13,8 +13,7 @@ use crate::types::PowerOfTwoOps;
 pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     mmu::init();
 
-    let (heap_start, pg_alloc_start, maxpages) = map_page_alloc_region(info);
-    let fb_start = map_kernel_heap(heap_start, info);
+    let (fb_start, pg_alloc_start, maxpages) = map_page_alloc_region(info);
     map_framebuffer(fb_start, info);
 
     pg_alloc::init(pg_alloc_start, maxpages, info);
@@ -22,23 +21,13 @@ pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     fb_start
 }
 
-fn map_page_alloc_region(info: &mut BootloaderInfo) -> (PhysAddr, VirtAddr, usize) {
+fn map_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, VirtAddr, usize) {
     let (maxpages, start, size) = pg_alloc::get_pg_alloc_region(info);
 
     mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
     info.free_areas.remove_range(start, size);
 
-    (start + size, VirtAddr::from(start), maxpages)
-}
-
-fn map_kernel_heap(start: PhysAddr, info: &mut BootloaderInfo) -> VirtAddr {
-    let size = arch::HEAP_SIZE;
-    let end = start + size;
-
-    mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
-    info.free_areas.remove_range(start, size);
-
-    VirtAddr::from(end)
+    (start.into_vaddr() + size, VirtAddr::from(start), maxpages)
 }
 
 fn map_framebuffer(start: VirtAddr, info: &mut BootloaderInfo) {
