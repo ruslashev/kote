@@ -44,6 +44,30 @@ pub struct PageMapLevel4 {
     entries: &'static mut [PageMapLevel4Entry],
 }
 
+impl PageMapLevel4 {
+    const fn empty() -> Self {
+        PageMapLevel4 {
+            addr: 0,
+            entries: &mut [],
+        }
+    }
+
+    fn new(addr: u64) -> Self {
+        let entries = unsafe {
+            let addr = addr as *mut PageMapLevel4Entry;
+            slice::from_raw_parts_mut(addr, ENTRIES)
+        };
+
+        Self { addr, entries }
+    }
+
+    fn clear(&mut self) {
+        let zero_entry = PageMapLevel4Entry { scalar: 0 };
+
+        self.entries.fill(zero_entry);
+    }
+}
+
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
 struct PageMapLevel4Entry {
@@ -137,30 +161,6 @@ impl DirectoryEntry for PageDirectoryEntry {
 
 impl DirectoryEntry for PageTableEntry {
     type PointsTo = u64;
-}
-
-impl PageMapLevel4 {
-    const fn empty() -> Self {
-        PageMapLevel4 {
-            addr: 0,
-            entries: &mut [],
-        }
-    }
-
-    fn new(addr: u64) -> Self {
-        let entries = unsafe {
-            let addr = addr as *mut PageMapLevel4Entry;
-            slice::from_raw_parts_mut(addr, ENTRIES)
-        };
-
-        Self { addr, entries }
-    }
-
-    fn clear(&mut self) {
-        let zero_entry = PageMapLevel4Entry { scalar: 0 };
-
-        self.entries.fill(zero_entry);
-    }
 }
 
 pub fn init() {
