@@ -48,6 +48,10 @@ ECHO = printf '%5s %s\n\c' $1 $2 $(@F)
 
 all: qemu
 
+iso: $(KERNISO)
+
+kernel: $(KERNBIN)
+
 qemu: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
 	@$(QEMU) $(QFLAGS) -cdrom $<
@@ -95,5 +99,5 @@ clean:
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
 
-.PHONY: all qemu clippy clean
+.PHONY: all iso kernel qemu clippy clean
 .DELETE_ON_ERROR:
