@@ -4,7 +4,7 @@
 
 use core::fmt;
 
-use crate::arch::{mmu, KERNEL_BASE};
+use crate::arch;
 use crate::mm::pg_alloc::{self, PageInfo};
 use crate::types::PowerOfTwoOps;
 
@@ -70,7 +70,7 @@ impl fmt::Display for VirtAddr {
 
 impl From<PhysAddr> for VirtAddr {
     fn from(paddr: PhysAddr) -> Self {
-        VirtAddr(paddr.0 + KERNEL_BASE as usize)
+        VirtAddr(paddr.0 + arch::KERNEL_BASE as usize)
     }
 }
 
@@ -98,6 +98,7 @@ pub trait RegisterFrameOps: fmt::Display {
 pub trait RootPageDirOps {
     fn new() -> Self;
     fn switch_to_this(&self);
+    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<arch::LeafDirEntry>;
     fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
     fn unmap_page_at_addr(&mut self, addr: VirtAddr);
 
@@ -105,7 +106,7 @@ pub trait RootPageDirOps {
         let beg = addr.0.page_round_down();
         let end = addr.0.checked_add(size).unwrap().page_round_up();
 
-        for page_addr in (beg..end).step_by(mmu::PAGE_SIZE) {
+        for page_addr in (beg..end).step_by(arch::mmu::PAGE_SIZE) {
             let page = pg_alloc::alloc_page();
 
             self.map_page_at_addr(page, VirtAddr(page_addr), perms);

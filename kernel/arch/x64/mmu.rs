@@ -83,7 +83,7 @@ struct PageDirectoryEntry {
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PageTableEntry {
+pub struct PageTableEntry {
     scalar: u64,
 }
 
@@ -241,62 +241,6 @@ pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
     }
 }
 
-fn walk_root_dir(addr: VirtAddr, root: &mut PageMapLevel4, create: bool) -> Option<PageTableEntry> {
-    let frames = addr.to_4k_page_frames();
-    let mut pml4e = root.as_slice()[frames.pml4_offs];
-
-    if !pml4e.present() {
-        if create {
-            pml4e.create_entry();
-        } else {
-            return None;
-        }
-    }
-
-    let pdpt = pml4e.pointed_dir();
-    let mut pdpe = pdpt[frames.pdpt_offs];
-
-    if !pdpe.present() {
-        if create {
-            pdpe.create_entry();
-        } else {
-            return None;
-        }
-    }
-
-    let pdt = pdpe.pointed_dir();
-    let mut pde = pdt[frames.pd_offset];
-
-    if !pde.present() {
-        if create {
-            pde.create_entry();
-        } else {
-            return None;
-        }
-    }
-
-    let pt = pde.pointed_dir();
-    let mut pte = pt[frames.pt_offset];
-
-    if !pte.present() {
-        if create {
-            pte.create_entry();
-        } else {
-            return None;
-        }
-    }
-
-    Some(pte)
-}
-
-pub fn is_page_present(addr: VirtAddr, root: &mut PageMapLevel4) -> bool {
-    walk_root_dir(addr, root, false).is_some()
-}
-
-pub fn get_or_create_page(addr: VirtAddr, root: &mut PageMapLevel4) -> VirtAddr {
-    walk_root_dir(addr, root, true).unwrap().pointed_vaddr()
-}
-
 impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();
@@ -309,8 +253,56 @@ impl RootPageDirOps for PageMapLevel4 {
         write_reg!(cr3, phys);
     }
 
+    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<PageTableEntry> {
+        let frames = addr.to_4k_page_frames();
+        let mut pml4e = self.as_slice()[frames.pml4_offs];
+
+        if !pml4e.present() {
+            if create {
+                pml4e.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        let pdpt = pml4e.pointed_dir();
+        let mut pdpe = pdpt[frames.pdpt_offs];
+
+        if !pdpe.present() {
+            if create {
+                pdpe.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        let pdt = pdpe.pointed_dir();
+        let mut pde = pdt[frames.pd_offset];
+
+        if !pde.present() {
+            if create {
+                pde.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        let pt = pde.pointed_dir();
+        let mut pte = pt[frames.pt_offset];
+
+        if !pte.present() {
+            if create {
+                pte.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        Some(pte)
+    }
+
     fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
-        if let Some(mut pte) = walk_root_dir(addr, self, true) {
+        if let Some(mut pte) = self.walk_root_dir(addr, true) {
             page.inc_refc();
 
             if pte.present() {
@@ -324,7 +316,7 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
-        if let Some(mut pte) = walk_root_dir(addr, self, false) {
+        if let Some(mut pte) = self.walk_root_dir(addr, false) {
             pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar & !PRESENT);
             arch::asm::invalidate_dcache(addr);
