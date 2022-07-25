@@ -13,21 +13,22 @@ use crate::types::PowerOfTwoOps;
 pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     mmu::init();
 
-    let (fb_start, pg_alloc_start, maxpages) = map_page_alloc_region(info);
-    map_framebuffer(fb_start, info);
+    let (pg_alloc_start, fb_start, maxpages) = prepare_page_alloc_region(info);
 
     pg_alloc::init(pg_alloc_start, maxpages, info);
 
     fb_start
 }
 
-fn map_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, VirtAddr, usize) {
+fn prepare_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, VirtAddr, usize) {
     let (maxpages, start, size) = pg_alloc::get_pg_alloc_region(info);
+    let start_vaddr = start.into_vaddr();
+    let end = start_vaddr + size;
 
     mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
     info.free_areas.remove_range(start, size);
 
-    (start.into_vaddr() + size, VirtAddr::from(start), maxpages)
+    (start_vaddr, end, maxpages)
 }
 
 fn map_framebuffer(start: VirtAddr, info: &mut BootloaderInfo) {

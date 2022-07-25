@@ -105,6 +105,8 @@ pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
         let pg_start = start.page_round_up();
         let pg_end = end.page_round_down();
 
+        println_serial!("Free area {:x?}..{:x?}", pg_start, pg_end);
+
         for pg in (pg_start..pg_end).step_by(mmu::PAGE_SIZE).rev() {
             let index = pg / mmu::PAGE_SIZE;
 
@@ -124,10 +126,10 @@ pub fn get_pg_alloc_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
     let mmap = &info.free_areas;
     let max_addr = mmap.entries[mmap.num_entries - 1].end;
     let maxpages = max_addr.div_ceil(mmu::PAGE_SIZE);
-    let page_infos_bytes = maxpages * size_of::<PageInfo>();
-    let page_infos_rounded = page_infos_bytes.lpage_round_up();
+    let size_bytes = maxpages * size_of::<PageInfo>();
+    let size_rounded = size_bytes.lpage_round_up();
 
-    (maxpages, PhysAddr::from_u64(alloc_start), page_infos_rounded)
+    (maxpages, PhysAddr::from_u64(alloc_start), size_rounded)
 }
 
 fn get_kernel_end(info: &BootloaderInfo) -> u64 {
