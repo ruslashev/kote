@@ -8,7 +8,7 @@ use crate::arch;
 use crate::mm::pg_alloc;
 use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
 use crate::spinlock::Mutex;
-use crate::types::{Bytes, KiB, MiB};
+use crate::types::{Bytes, KiB, MiB, PowerOfTwoOps};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
@@ -77,7 +77,7 @@ struct PageDirectoryPointerEntry {
 
 #[repr(C, packed)]
 #[derive(Clone, Copy)]
-struct PageDirectoryEntry {
+pub struct PageDirectoryEntry {
     scalar: u64,
 }
 
@@ -301,6 +301,43 @@ impl RootPageDirOps for PageMapLevel4 {
         Some(pte)
     }
 
+    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<PageDirectoryEntry> {
+        let frames = addr.to_2m_page_frames();
+        let mut pml4e = self.as_slice()[frames.pml4_offs];
+
+        if !pml4e.present() {
+            if create {
+                pml4e.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        let pdpt = pml4e.pointed_dir();
+        let mut pdpe = pdpt[frames.pdpt_offs];
+
+        if !pdpe.present() {
+            if create {
+                pdpe.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        let pdt = pdpe.pointed_dir();
+        let mut pde = pdt[frames.pd_offset];
+
+        if !pde.present() {
+            if create {
+                pde.create_entry();
+            } else {
+                return None;
+            }
+        }
+
+        Some(pde)
+    }
+
     fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
         if let Some(mut pte) = self.walk_root_dir(addr, true) {
             page.inc_refc();
@@ -320,6 +357,31 @@ impl RootPageDirOps for PageMapLevel4 {
             pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar & !PRESENT);
             arch::asm::invalidate_dcache(addr);
+        }
+    }
+
+    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, num_large_pages: usize, perms: u64) {
+        assert!(from.0.is_lpage_aligned());
+        assert!(to.0.is_lpage_aligned());
+
+        let size = num_large_pages * PAGE_SIZE_LARGE;
+
+        println_serial!(
+            "Map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{}, {} MiB)",
+            from.0,
+            from.0 + size,
+            to.0,
+            to.0 + size,
+            num_large_pages,
+            if num_large_pages > 1 { "s" } else { "" },
+            size / 1024 / 1024
+        );
+
+        for page in 0..num_large_pages {
+            let mut pte = self.walk_root_dir_large(from + page * PAGE_SIZE_LARGE, true).unwrap();
+            let addr = to.0 + page * PAGE_SIZE_LARGE;
+
+            pte.set_scalar(addr as u64 | PRESENT | HUGE | perms);
         }
     }
 }

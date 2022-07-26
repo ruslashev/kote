@@ -99,8 +99,10 @@ pub trait RootPageDirOps {
     fn new() -> Self;
     fn switch_to_this(&self);
     fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<arch::LeafDirEntry>;
+    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<arch::LeafDirEntryLarge>;
     fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
     fn unmap_page_at_addr(&mut self, addr: VirtAddr);
+    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, npages: usize, perms: u64);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: u64) {
         let beg = addr.0.page_round_down();

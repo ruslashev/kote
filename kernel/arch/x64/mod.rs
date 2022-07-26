@@ -24,3 +24,4 @@ const GDT_USER_DATA: u8 = 32;
 pub type RegisterFrame = interrupts::exceptions::ExceptionFrame;
 pub type RootPageDir = mmu::PageMapLevel4;
 pub type LeafDirEntry = mmu::PageTableEntry;
+pub type LeafDirEntryLarge = mmu::PageDirectoryEntry;
