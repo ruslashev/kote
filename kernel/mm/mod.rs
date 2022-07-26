@@ -6,9 +6,9 @@ pub mod pg_alloc;
 pub mod types;
 
 use self::types::{Address, PhysAddr, VirtAddr};
-use crate::arch::{self, mmu};
+use crate::arch::{self, mmu, RootPageDir};
 use crate::bootloader::BootloaderInfo;
-use crate::types::PowerOfTwoOps;
+use crate::mm::types::RootPageDirOps;
 
 pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     mmu::init();
@@ -16,6 +16,8 @@ pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
     let (pg_alloc_start, fb_start, maxpages) = prepare_page_alloc_region(info);
 
     pg_alloc::init(pg_alloc_start, maxpages, info);
+
+    let _kern_root_dir = create_kern_root_dir(maxpages);
 
     fb_start
 }
@@ -25,22 +27,19 @@ fn prepare_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, VirtAddr, 
     let start_vaddr = start.into_vaddr();
     let end = start_vaddr + size;
 
-    mmu::map_early_region(start, size, arch::KERNEL_BASE as usize);
+    mmu::map_pg_alloc_region(start, size, arch::KERNEL_BASE as usize);
     info.free_areas.remove_range(start, size);
 
     (start_vaddr, end, maxpages)
 }
 
-fn map_framebuffer(start: VirtAddr, info: &mut BootloaderInfo) {
-    let fb = &info.framebuffer;
-    let phys = PhysAddr::from_u64(fb.addr);
-    let size = fb.pitch * fb.height;
-    let size = usize::try_from(size).expect("framebuffer size overflows usize");
-    let size = size.lpage_round_up();
-    let virt = start;
-    let offset = virt.0 - phys.0;
+fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
+    let mut root_dir = RootPageDir::new();
 
-    mmu::map_early_region(phys, size, offset);
+    println_serial!("Mapping physical memory...");
+    let phys_size = maxpages * mmu::PAGE_SIZE;
+    let lpages = phys_size.div_ceil(mmu::PAGE_SIZE_LARGE);
+    root_dir.map_static_region(VirtAddr::from_u64(arch::KERNEL_BASE), PhysAddr(0), lpages, mmu::WRITABLE);
 
-    info.free_areas.remove_range(phys, size);
+    root_dir
 }

@@ -119,7 +119,7 @@ trait DirectoryEntry: SetScalar + Into<u64> {
         let dir = pg_alloc::alloc_page().inc_refc();
         let addr = dir.to_physaddr().0 as u64;
 
-        self.set_scalar(addr | USER_ACCESSIBLE | WRITABLE | PRESENT);
+        self.set_scalar(addr | WRITABLE | PRESENT);
     }
 }
 
@@ -210,8 +210,7 @@ impl ToFrames for VirtAddr {
     }
 }
 
-/// For early-stage allocation of regions, e.g. page infos and framebuffer
-pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
+pub fn map_pg_alloc_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
     extern "C" {
         fn pd();
     }
@@ -219,13 +218,14 @@ pub fn map_early_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
     let num_pages = size / PAGE_SIZE_LARGE;
 
     println_serial!(
-        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{})",
+        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{}, {} MiB)",
         start.0 + offset_for_virt,
         start.0 + offset_for_virt + size,
         start.0,
         start.0 + size,
         num_pages,
-        if num_pages > 1 { "s" } else { "" }
+        if num_pages > 1 { "s" } else { "" },
+        size / 1024 / 1024
     );
 
     let pd_ptr = pd as *mut u64;
