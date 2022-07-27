@@ -42,6 +42,13 @@ macro_rules! println_serial {
     };
 }
 
+#[macro_export]
+macro_rules! print_serial {
+    ($($arg:tt)*) => {
+        $crate::printk::do_println(&format_args!($($arg)*), false, false, true);
+    };
+}
+
 pub fn do_println(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bool) {
     interrupts::with_disabled(|| {
         if no_cons {
