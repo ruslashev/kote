@@ -10,7 +10,7 @@ BUILDDIR = build
 OBJDIR = $(BUILDDIR)/obj
 ISODIR = $(BUILDDIR)/iso
 RUSTDIR = $(BUILDDIR)/rust
-RBUILDDIR = $(RUSTDIR)/target/debug
+RBUILDDIR = $(RUSTDIR)/target/*
 DISASDIR = $(BUILDDIR)/disas
 
 LN = ln -sf
@@ -32,6 +32,15 @@ GRUB_CFG = cfg/grub.cfg
 
 QEMU = qemu-system-x86_64
 QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial0
+
+ifdef RELEASE
+	CFLAGS += --release
+else
+	QFLAGS += -display none \
+	          -action reboot=shutdown \
+	          -no-shutdown \
+	          -d mmu,cpu_reset
+endif
 
 KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
