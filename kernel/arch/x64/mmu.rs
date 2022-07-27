@@ -241,7 +241,7 @@ impl RootPageDirOps for PageMapLevel4 {
         write_reg!(cr3, phys);
     }
 
-    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry> {
+    fn walk_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry> {
         let frames = addr.to_4k_page_frames();
         let pml4e = &mut self.as_slice_mut()[frames.pml4_offs];
 
@@ -289,7 +289,7 @@ impl RootPageDirOps for PageMapLevel4 {
         Some(pte)
     }
 
-    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge> {
+    fn walk_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge> {
         let frames = addr.to_2m_page_frames();
         let pml4e = &mut self.as_slice_mut()[frames.pml4_offs];
 
@@ -327,7 +327,7 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
-        let pte = self.walk_root_dir(addr, true).unwrap();
+        let pte = self.walk_dir(addr, true).unwrap();
         page.inc_refc();
 
         if pte.present() {
@@ -342,7 +342,7 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
-        if let Some(pte) = self.walk_root_dir(addr, false) {
+        if let Some(pte) = self.walk_dir(addr, false) {
             pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar & !PRESENT);
             arch::asm::invalidate_dcache(addr);
@@ -368,7 +368,7 @@ impl RootPageDirOps for PageMapLevel4 {
 
         for page in 0..lpages {
             let vaddr = from + page * PAGE_SIZE_LARGE;
-            let pde = self.walk_root_dir_large(vaddr, true).unwrap();
+            let pde = self.walk_dir_large(vaddr, true).unwrap();
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
             pde.set_scalar(addr as u64 | PRESENT | HUGE | perms);

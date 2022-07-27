@@ -98,8 +98,8 @@ pub trait RegisterFrameOps: fmt::Display {
 pub trait RootPageDirOps {
     fn new() -> Self;
     fn switch_to_this(&self);
-    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry>;
-    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge>;
+    fn walk_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry>;
+    fn walk_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge>;
     fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: u64);
     fn unmap_page_at_addr(&mut self, addr: VirtAddr);
     fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, npages: usize, perms: u64);
