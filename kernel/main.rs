@@ -34,11 +34,9 @@ mod types;
 #[no_mangle]
 pub extern "C" fn kmain() {
     serial::init();
-
     let mut info = bootloader::get_info();
-    let _fb_addr = mm::init(&mut info);
-
-    // console::init(fb_addr, &info);
+    mm::init(&mut info);
+    console::init(&info);
 
     arch::interrupts::init();
     arch::interrupts::enable();

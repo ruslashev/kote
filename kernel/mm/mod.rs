@@ -9,28 +9,27 @@ use self::types::{Address, PhysAddr, VirtAddr};
 use crate::arch::{self, mmu, RootPageDir};
 use crate::bootloader::BootloaderInfo;
 use crate::mm::types::RootPageDirOps;
+use crate::spinlock::Mutex;
 
-pub fn init(info: &mut BootloaderInfo) -> VirtAddr {
-    mmu::init();
+static ROOT_KERN_DIR: Mutex<RootPageDir> = Mutex::new(arch::EMPTY_ROOT_DIR);
 
-    let (pg_alloc_start, fb_start, maxpages) = prepare_page_alloc_region(info);
+pub fn init(info: &mut BootloaderInfo) {
+    let (pg_alloc_start, maxpages) = prepare_page_alloc_region(info);
 
     pg_alloc::init(pg_alloc_start, maxpages, info);
 
-    let _kern_root_dir = create_kern_root_dir(maxpages);
-
-    fb_start
+    let mut kern_root_dir = ROOT_KERN_DIR.guard();
+    *kern_root_dir = create_kern_root_dir(maxpages);
+    kern_root_dir.switch_to_this();
 }
 
-fn prepare_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, VirtAddr, usize) {
+fn prepare_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, usize) {
     let (maxpages, start, size) = pg_alloc::get_pg_alloc_region(info);
-    let start_vaddr = start.into_vaddr();
-    let end = start_vaddr + size;
 
     mmu::map_pg_alloc_region(start, size, arch::KERNEL_BASE as usize);
     info.free_areas.remove_range(start, size);
 
-    (start_vaddr, end, maxpages)
+    (start.into_vaddr(), maxpages)
 }
 
 fn create_kern_root_dir(maxpages: usize) -> RootPageDir {

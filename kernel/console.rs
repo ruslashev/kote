@@ -5,7 +5,7 @@
 use core::cell::OnceCell;
 
 use crate::bootloader::BootloaderInfo;
-use crate::mm::types::VirtAddr;
+use crate::mm::types::{VirtAddr, PhysAddr, Address};
 use crate::panic::panic_no_graphics;
 use crate::spinlock::Mutex;
 
@@ -175,9 +175,12 @@ impl Font {
     }
 }
 
-pub fn init(fb_addr: VirtAddr, info: &BootloaderInfo) {
+pub fn init(info: &BootloaderInfo) {
+    let fb_addr_phys = PhysAddr::from_u64(info.framebuffer.addr);
+    let fb_addr_virt = fb_addr_phys.into_vaddr();
+
     let cell = CONSOLE.guard();
-    cell.set(Console::new(fb_addr, info)).unwrap();
+    cell.set(Console::new(fb_addr_virt, info)).unwrap();
 }
 
 const fn compute_fb_lut() -> [[u32; 8]; 2usize.pow(8)] {

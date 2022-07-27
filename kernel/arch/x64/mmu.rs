@@ -7,7 +7,6 @@ use core::slice;
 use crate::arch;
 use crate::mm::pg_alloc;
 use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
-use crate::spinlock::Mutex;
 use crate::types::{Bytes, KiB, MiB, PowerOfTwoOps};
 
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
@@ -37,14 +36,12 @@ pub const WRITABLE: u64 = 1 << 1;
 pub const USER_ACCESSIBLE: u64 = 1 << 2;
 pub const HUGE: u64 = 1 << 7;
 
-static ROOT_KERN_DIR: Mutex<PageMapLevel4> = Mutex::new(PageMapLevel4::empty());
-
 pub struct PageMapLevel4 {
     addr: usize,
 }
 
 impl PageMapLevel4 {
-    const fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self { addr: 0 }
     }
 
@@ -156,15 +153,6 @@ impl DirectoryEntry for PageDirectoryEntry {
 
 impl DirectoryEntry for PageTableEntry {
     type PointsTo = u64;
-}
-
-pub fn init() {
-    // Defined in start.s
-    extern "C" {
-        fn pml4();
-    }
-
-    *ROOT_KERN_DIR.guard() = PageMapLevel4 { addr: pml4 as usize };
 }
 
 #[derive(Debug)]
@@ -388,5 +376,5 @@ impl RootPageDirOps for PageMapLevel4 {
 
 pub fn prepare_userspace_root_dir(root_dir: &mut PageMapLevel4) {
     // Temporary
-    root_dir.as_slice_mut().copy_from_slice(ROOT_KERN_DIR.guard().as_slice());
+    // root_dir.as_slice_mut().copy_from_slice(ROOT_KERN_DIR.guard().as_slice());
 }
