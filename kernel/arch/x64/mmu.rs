@@ -348,11 +348,11 @@ impl RootPageDirOps for PageMapLevel4 {
         }
     }
 
-    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, num_large_pages: usize, perms: u64) {
+    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: u64) {
         assert!(from.0.is_lpage_aligned());
         assert!(to.0.is_lpage_aligned());
 
-        let size = num_large_pages * PAGE_SIZE_LARGE;
+        let size = lpages * PAGE_SIZE_LARGE;
 
         println_serial!(
             "Map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{}, {} MiB)",
@@ -360,13 +360,15 @@ impl RootPageDirOps for PageMapLevel4 {
             from.0 + size,
             to.0,
             to.0 + size,
-            num_large_pages,
-            if num_large_pages > 1 { "s" } else { "" },
+            lpages,
+            if lpages > 1 { "s" } else { "" },
             size / 1024 / 1024
         );
 
-        for page in 0..num_large_pages {
-            let mut pte = self.walk_root_dir_large(from + page * PAGE_SIZE_LARGE, true).unwrap();
+        for page in 0..lpages {
+            let mut pte = self
+                .walk_root_dir_large(from + page * PAGE_SIZE_LARGE, true)
+                .unwrap();
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
             pte.set_scalar(addr as u64 | PRESENT | HUGE | perms);

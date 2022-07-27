@@ -5,7 +5,7 @@
 use core::cell::OnceCell;
 
 use crate::bootloader::BootloaderInfo;
-use crate::mm::types::{VirtAddr, PhysAddr, Address};
+use crate::mm::types::{Address, PhysAddr, VirtAddr};
 use crate::panic::panic_no_graphics;
 use crate::spinlock::Mutex;
 
