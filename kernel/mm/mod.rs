@@ -45,5 +45,7 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
         mmu::WRITABLE,
     );
 
+    root_dir.map_static_region(VirtAddr(0), PhysAddr(0), 64, 0);
+
     root_dir
 }
