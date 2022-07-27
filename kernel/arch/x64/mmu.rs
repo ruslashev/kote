@@ -4,7 +4,7 @@
 
 use core::slice;
 
-use crate::arch;
+use crate::arch::{self, LeafDirEntry, LeafDirEntryLarge};
 use crate::mm::pg_alloc;
 use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
 use crate::types::{Bytes, KiB, MiB, PowerOfTwoOps};
@@ -241,9 +241,9 @@ impl RootPageDirOps for PageMapLevel4 {
         write_reg!(cr3, phys);
     }
 
-    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<PageTableEntry> {
+    fn walk_root_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry> {
         let frames = addr.to_4k_page_frames();
-        let mut pml4e = self.as_slice()[frames.pml4_offs];
+        let pml4e = &mut self.as_slice_mut()[frames.pml4_offs];
 
         if !pml4e.present() {
             if create {
@@ -254,7 +254,7 @@ impl RootPageDirOps for PageMapLevel4 {
         }
 
         let pdpt = pml4e.pointed_dir();
-        let mut pdpe = pdpt[frames.pdpt_offs];
+        let pdpe = &mut pdpt[frames.pdpt_offs];
 
         if !pdpe.present() {
             if create {
@@ -265,7 +265,7 @@ impl RootPageDirOps for PageMapLevel4 {
         }
 
         let pdt = pdpe.pointed_dir();
-        let mut pde = pdt[frames.pd_offset];
+        let pde = &mut pdt[frames.pd_offset];
 
         if !pde.present() {
             if create {
@@ -276,7 +276,7 @@ impl RootPageDirOps for PageMapLevel4 {
         }
 
         let pt = pde.pointed_dir();
-        let mut pte = pt[frames.pt_offset];
+        let pte = &mut pt[frames.pt_offset];
 
         if !pte.present() {
             if create {
@@ -289,9 +289,9 @@ impl RootPageDirOps for PageMapLevel4 {
         Some(pte)
     }
 
-    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<PageDirectoryEntry> {
+    fn walk_root_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge> {
         let frames = addr.to_2m_page_frames();
-        let mut pml4e = self.as_slice()[frames.pml4_offs];
+        let pml4e = &mut self.as_slice_mut()[frames.pml4_offs];
 
         if !pml4e.present() {
             if create {
@@ -302,7 +302,7 @@ impl RootPageDirOps for PageMapLevel4 {
         }
 
         let pdpt = pml4e.pointed_dir();
-        let mut pdpe = pdpt[frames.pdpt_offs];
+        let pdpe = &mut pdpt[frames.pdpt_offs];
 
         if !pdpe.present() {
             if create {
@@ -313,7 +313,7 @@ impl RootPageDirOps for PageMapLevel4 {
         }
 
         let pdt = pdpe.pointed_dir();
-        let mut pde = pdt[frames.pd_offset];
+        let pde = &mut pdt[frames.pd_offset];
 
         if !pde.present() {
             if create {
@@ -327,21 +327,22 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
-        if let Some(mut pte) = self.walk_root_dir(addr, true) {
-            page.inc_refc();
+        let pte = self.walk_root_dir(addr, true).unwrap();
+        page.inc_refc();
 
-            if pte.present() {
-                self.unmap_page_at_addr(addr);
-            }
-
-            let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
-
-            pte.set_scalar(addr);
+        if pte.present() {
+            pte.pointed_addr().dec_page_refc();
+            pte.set_scalar(pte.scalar & !PRESENT);
+            arch::asm::invalidate_dcache(addr);
         }
+
+        let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
+
+        pte.set_scalar(addr);
     }
 
     fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
-        if let Some(mut pte) = self.walk_root_dir(addr, false) {
+        if let Some(pte) = self.walk_root_dir(addr, false) {
             pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar & !PRESENT);
             arch::asm::invalidate_dcache(addr);
@@ -366,17 +367,16 @@ impl RootPageDirOps for PageMapLevel4 {
         );
 
         for page in 0..lpages {
-            let mut pte = self
-                .walk_root_dir_large(from + page * PAGE_SIZE_LARGE, true)
-                .unwrap();
+            let vaddr = from + page * PAGE_SIZE_LARGE;
+            let pde = self.walk_root_dir_large(vaddr, true).unwrap();
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
-            pte.set_scalar(addr as u64 | PRESENT | HUGE | perms);
+            pde.set_scalar(addr as u64 | PRESENT | HUGE | perms);
         }
     }
 }
 
-pub fn prepare_userspace_root_dir(root_dir: &mut PageMapLevel4) {
+pub fn prepare_userspace_root_dir(_root_dir: &mut PageMapLevel4) {
     // Temporary
     // root_dir.as_slice_mut().copy_from_slice(ROOT_KERN_DIR.guard().as_slice());
 }
