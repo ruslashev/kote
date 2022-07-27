@@ -5,3 +5,5 @@
 [workspace]
 members = ["kernel", "userspace/*"]
 
+[profile.dev]
+opt-level = 1
