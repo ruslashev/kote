@@ -68,6 +68,18 @@ impl fmt::Display for VirtAddr {
     }
 }
 
+impl fmt::LowerHex for PhysAddr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::LowerHex for VirtAddr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
 impl From<PhysAddr> for VirtAddr {
     fn from(paddr: PhysAddr) -> Self {
         VirtAddr(paddr.0 + arch::KERNEL_BASE as usize)

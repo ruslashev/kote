@@ -326,10 +326,10 @@ impl RootPageDirOps for PageMapLevel4 {
 
         println_serial!(
             "Map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{}, {} MiB)",
-            from.0,
-            from.0 + size,
-            to.0,
-            to.0 + size,
+            from,
+            from + size,
+            to,
+            to + size,
             lpages,
             if lpages > 1 { "s" } else { "" },
             size / 1024 / 1024

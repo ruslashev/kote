@@ -90,8 +90,8 @@ pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
 
     println_serial!(
         "Initializing page information list at {:x?}..{:x?}...",
-        area_start.0,
-        area_start.0 + maxpages * size_of::<PageInfo>()
+        area_start,
+        area_start + maxpages * size_of::<PageInfo>()
     );
 
     let mmap = &info.free_areas;
