@@ -22,7 +22,7 @@ pub struct PageInfo {
 
 impl PageInfo {
     fn alloc() -> Option<&'static mut PageInfo> {
-        let mut freep = FREE_PAGES.guard();
+        let mut freep = FREE_PAGES.lock();
         let mut head = (*freep)?;
         let pgref = unsafe { head.as_mut() };
 
@@ -41,7 +41,7 @@ impl PageInfo {
 
     fn free(&mut self) {
         assert!(self.refc == 0, "free_page: page is used");
-        let mut freep = FREE_PAGES.guard();
+        let mut freep = FREE_PAGES.lock();
 
         self.next = *freep;
 
@@ -49,7 +49,7 @@ impl PageInfo {
     }
 
     pub fn to_physaddr(&self) -> PhysAddr {
-        let infos = PAGE_INFOS.guard();
+        let infos = PAGE_INFOS.lock();
         let base = addr_of!(infos[0]) as usize;
         let this = addr_of!(*self) as usize;
         let offset = this - base;
@@ -75,13 +75,13 @@ impl PageInfo {
 
 pub fn dec_page_refc(addr: PhysAddr) {
     let idx = addr.0 / mmu::PAGE_SIZE;
-    let mut infos = PAGE_INFOS.guard();
+    let mut infos = PAGE_INFOS.lock();
     infos[idx].dec_refc();
 }
 
 pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {
-    let mut infos = PAGE_INFOS.guard();
-    let mut freep = FREE_PAGES.guard();
+    let mut infos = PAGE_INFOS.lock();
+    let mut freep = FREE_PAGES.lock();
 
     *infos = unsafe { core::slice::from_raw_parts_mut(area_start.0 as *mut PageInfo, maxpages) };
     infos.fill_with(Default::default); // mark all as non-free

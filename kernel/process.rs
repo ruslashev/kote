@@ -47,7 +47,7 @@ impl Process {
 }
 
 pub fn init() {
-    let mut processes = PROCESSES.guard();
+    let mut processes = PROCESSES.lock();
 
     processes[0] = Some(Process::from_elf(LOOP_ELF));
 }

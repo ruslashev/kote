@@ -52,13 +52,13 @@ macro_rules! print_serial {
 pub fn do_println(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bool) {
     interrupts::with_disabled(|| {
         if no_cons {
-            let mut serial = SERIAL_LOCK.guard();
+            let mut serial = SERIAL_LOCK.lock();
             write(&mut *serial, args, newline);
         } else {
             let (mut serial, mut cons_cell) = if force {
                 (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
             } else {
-                (SERIAL_LOCK.guard(), CONSOLE.guard())
+                (SERIAL_LOCK.lock(), CONSOLE.lock())
             };
 
             write(&mut *serial, args, newline);

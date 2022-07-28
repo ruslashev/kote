@@ -179,7 +179,7 @@ pub fn init(info: &BootloaderInfo) {
     let fb_addr_phys = PhysAddr::from_u64(info.framebuffer.addr);
     let fb_addr_virt = fb_addr_phys.into_vaddr();
 
-    let cell = CONSOLE.guard();
+    let cell = CONSOLE.lock();
     cell.set(Console::new(fb_addr_virt, info)).unwrap();
 }
 

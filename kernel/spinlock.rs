@@ -50,7 +50,7 @@ impl<T> SpinlockMutex<T> {
         }
     }
 
-    pub fn guard(&self) -> SpinlockGuard<T> {
+    pub fn lock(&self) -> SpinlockGuard<T> {
         self.lock.lock();
 
         SpinlockGuard {

@@ -20,7 +20,7 @@ pub fn init(info: &mut BootloaderInfo) {
 
     pg_alloc::init(pg_alloc_start.into_vaddr(), maxpages, info);
 
-    let mut kern_root_dir = ROOT_KERN_DIR.guard();
+    let mut kern_root_dir = ROOT_KERN_DIR.lock();
     *kern_root_dir = create_kern_root_dir(maxpages);
     kern_root_dir.switch_to_this();
 }
