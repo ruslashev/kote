@@ -34,7 +34,7 @@ const ENTRIES: usize = 512;
 pub const PRESENT: usize = 1 << 0;
 pub const WRITABLE: usize = 1 << 1;
 pub const USER_ACCESSIBLE: usize = 1 << 2;
-pub const HUGE: usize = 1 << 7;
+pub const LARGE: usize = 1 << 7;
 
 pub struct PageMapLevel4 {
     addr: usize,
@@ -318,7 +318,33 @@ impl RootPageDirOps for PageMapLevel4 {
         }
     }
 
-    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize) {
+    fn map_region(&mut self, from: VirtAddr, to: PhysAddr, pages: usize, perms: usize) {
+        assert!(from.0.is_page_aligned());
+        assert!(to.0.is_page_aligned());
+
+        let size = pages * PAGE_SIZE;
+
+        println_serial!(
+            "Map {:#x}..{:#x} -> {:#x}..{:#x} ({} page{}, {} KiB)",
+            from,
+            from + size,
+            to,
+            to + size,
+            pages,
+            if pages > 1 { "s" } else { "" },
+            size / 1024
+        );
+
+        for page in 0..pages {
+            let vaddr = from + page * PAGE_SIZE;
+            let pde = self.walk_dir_large(vaddr, true).unwrap();
+            let addr = to.0 + page * PAGE_SIZE;
+
+            pde.set_scalar(addr | perms);
+        }
+    }
+
+    fn map_region_large(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize) {
         assert!(from.0.is_lpage_aligned());
         assert!(to.0.is_lpage_aligned());
 
@@ -340,7 +366,7 @@ impl RootPageDirOps for PageMapLevel4 {
             let pde = self.walk_dir_large(vaddr, true).unwrap();
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
-            pde.set_scalar(addr | perms | PRESENT | HUGE);
+            pde.set_scalar(addr | perms | LARGE);
         }
     }
 }

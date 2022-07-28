@@ -114,7 +114,8 @@ pub trait RootPageDirOps {
     fn walk_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge>;
     fn map_page_at_addr(&mut self, page: &mut PageInfo, addr: VirtAddr, perms: usize);
     fn unmap_page_at_addr(&mut self, addr: VirtAddr);
-    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, npages: usize, perms: usize);
+    fn map_region(&mut self, from: VirtAddr, to: PhysAddr, pages: usize, perms: usize);
+    fn map_region_large(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: usize) {
         let beg = addr.0.page_round_down();
