@@ -4,9 +4,6 @@
 
 global start
 global mb_info
-global pml4
-global pdpt
-global pd
 
 extern kmain
 extern __sbss

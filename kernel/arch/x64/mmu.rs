@@ -198,37 +198,6 @@ impl ToFrames for VirtAddr {
     }
 }
 
-pub fn map_pg_alloc_region(start: PhysAddr, size: usize, offset_for_virt: usize) {
-    extern "C" {
-        fn pd();
-    }
-
-    let num_pages = size / PAGE_SIZE_LARGE;
-
-    println_serial!(
-        "Early map {:#x}..{:#x} -> {:#x}..{:#x} ({} large page{}, {} MiB)",
-        start.0 + offset_for_virt,
-        start.0 + offset_for_virt + size,
-        start.0,
-        start.0 + size,
-        num_pages,
-        if num_pages > 1 { "s" } else { "" },
-        size / 1024 / 1024
-    );
-
-    let pd_ptr = pd as *mut u64;
-    let range = start.0..start.0 + size;
-
-    for phys in range.step_by(PAGE_SIZE_LARGE) {
-        let virt = VirtAddr(phys + offset_for_virt);
-        let frames = virt.to_2m_page_frames();
-
-        unsafe {
-            *pd_ptr.add(frames.pd_offset as usize) = phys as u64 | HUGE | WRITABLE | PRESENT;
-        }
-    }
-}
-
 impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();

@@ -14,22 +14,15 @@ use crate::spinlock::Mutex;
 static ROOT_KERN_DIR: Mutex<RootPageDir> = Mutex::new(arch::EMPTY_ROOT_DIR);
 
 pub fn init(info: &mut BootloaderInfo) {
-    let (pg_alloc_start, maxpages) = prepare_page_alloc_region(info);
+    let (maxpages, pg_alloc_start, pg_alloc_size) = pg_alloc::get_pg_alloc_region(info);
 
-    pg_alloc::init(pg_alloc_start, maxpages, info);
+    info.free_areas.remove_range(pg_alloc_start, pg_alloc_size);
+
+    pg_alloc::init(pg_alloc_start.into_vaddr(), maxpages, info);
 
     let mut kern_root_dir = ROOT_KERN_DIR.guard();
     *kern_root_dir = create_kern_root_dir(maxpages);
     kern_root_dir.switch_to_this();
-}
-
-fn prepare_page_alloc_region(info: &mut BootloaderInfo) -> (VirtAddr, usize) {
-    let (maxpages, start, size) = pg_alloc::get_pg_alloc_region(info);
-
-    mmu::map_pg_alloc_region(start, size, arch::KERNEL_BASE as usize);
-    info.free_areas.remove_range(start, size);
-
-    (start.into_vaddr(), maxpages)
 }
 
 fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
