@@ -31,10 +31,10 @@ pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
 const ENTRIES: usize = 512;
 
-pub const PRESENT: u64 = 1 << 0;
-pub const WRITABLE: u64 = 1 << 1;
-pub const USER_ACCESSIBLE: u64 = 1 << 2;
-pub const HUGE: u64 = 1 << 7;
+pub const PRESENT: usize = 1 << 0;
+pub const WRITABLE: usize = 1 << 1;
+pub const USER_ACCESSIBLE: usize = 1 << 2;
+pub const HUGE: usize = 1 << 7;
 
 pub struct PageMapLevel4 {
     addr: usize,
@@ -85,14 +85,14 @@ pub struct PageTableEntry {
 }
 
 trait SetScalar {
-    fn set_scalar(&mut self, val: u64);
+    fn set_scalar(&mut self, val: usize);
 }
 
 trait DirectoryEntry: SetScalar + Into<u64> {
     type PointsTo;
 
     fn present(self) -> bool {
-        self.into() & PRESENT != 0
+        self.into() & PRESENT as u64 != 0
     }
 
     /// Get the address of directory this entry points to
@@ -114,9 +114,9 @@ trait DirectoryEntry: SetScalar + Into<u64> {
 
     fn create_entry(&mut self) {
         let dir = pg_alloc::alloc_page().inc_refc();
-        let addr = dir.to_physaddr().0 as u64;
+        let addr = dir.to_physaddr().0 | WRITABLE | PRESENT;
 
-        self.set_scalar(addr | WRITABLE | PRESENT);
+        self.set_scalar(addr);
     }
 }
 
@@ -129,8 +129,8 @@ impl From<$type> for u64 {
     }
 }
 impl SetScalar for $type {
-    fn set_scalar(&mut self, val: u64) {
-        self.scalar = val;
+    fn set_scalar(&mut self, val: usize) {
+        self.scalar = val as u64;
     }
 }
         )*
@@ -295,17 +295,17 @@ impl RootPageDirOps for PageMapLevel4 {
         Some(pde)
     }
 
-    fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: u64) {
+    fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: usize) {
         let pte = self.walk_dir(addr, true).unwrap();
         page.inc_refc();
 
         if pte.present() {
             pte.pointed_addr().dec_page_refc();
-            pte.set_scalar(pte.scalar & !PRESENT);
+            pte.set_scalar(pte.scalar as usize & !PRESENT);
             arch::asm::invalidate_dcache(addr);
         }
 
-        let addr = page.to_physaddr().0 as u64 | perms | PRESENT;
+        let addr = page.to_physaddr().0 | perms | PRESENT;
 
         pte.set_scalar(addr);
     }
@@ -313,12 +313,12 @@ impl RootPageDirOps for PageMapLevel4 {
     fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
         if let Some(pte) = self.walk_dir(addr, false) {
             pte.pointed_addr().dec_page_refc();
-            pte.set_scalar(pte.scalar & !PRESENT);
+            pte.set_scalar(pte.scalar as usize & !PRESENT);
             arch::asm::invalidate_dcache(addr);
         }
     }
 
-    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: u64) {
+    fn map_static_region(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize) {
         assert!(from.0.is_lpage_aligned());
         assert!(to.0.is_lpage_aligned());
 
@@ -340,7 +340,7 @@ impl RootPageDirOps for PageMapLevel4 {
             let pde = self.walk_dir_large(vaddr, true).unwrap();
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
-            pde.set_scalar(addr as u64 | PRESENT | HUGE | perms);
+            pde.set_scalar(addr | perms | PRESENT | HUGE);
         }
     }
 }
