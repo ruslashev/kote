@@ -8,6 +8,7 @@
 use core::mem::size_of;
 
 use super::*;
+use crate::arch::KERNEL_BASE;
 use crate::elf::Elf64Shdr;
 use crate::panic::panic_no_graphics;
 use crate::types::PowerOfTwoOps;
@@ -268,7 +269,8 @@ fn parse_elf_sections(header: *const u32) -> SectionInfo {
     unsafe {
         let num_shdrs = header.offset(2).read() as usize;
         let shstrtab_idx = header.offset(4).read() as usize;
-        let shdrs = header.offset(5).cast::<Elf64Shdr>();
+        let shdrs_addr = header.offset(5) as u64;
+        let shdrs = (shdrs_addr + KERNEL_BASE) as *const Elf64Shdr;
 
         SectionInfo {
             num_shdrs,
@@ -295,7 +297,7 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
     let shdr_ranges =
         SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()).map(|(_, shdr)| {
             let mut addr = shdr.sh_addr as usize;
-            let base = crate::arch::KERNEL_BASE as usize;
+            let base = KERNEL_BASE as usize;
             let size = shdr.sh_size as usize;
 
             if addr > base {

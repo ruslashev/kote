@@ -8,6 +8,7 @@ use core::fmt;
 use core::ops::Range;
 use core::{slice, str};
 
+use crate::arch::KERNEL_BASE;
 use crate::elf::Elf64Shdr;
 use crate::mm::types::PhysAddr;
 use crate::panic::panic_no_graphics;
@@ -70,7 +71,11 @@ impl<'i> SectionInfoIterator<'i> {
         let shstrtab = unsafe {
             let idx = info.shstrtab_idx;
             let shdr = info.shdrs.add(idx).read();
-            let addr = shdr.sh_addr as *const u8;
+            let addr = if shdr.sh_addr < KERNEL_BASE {
+                shdr.sh_addr + KERNEL_BASE
+            } else {
+                shdr.sh_addr
+            } as *const u8;
             let size = shdr.sh_size as usize;
             slice::from_raw_parts(addr, size)
         };
