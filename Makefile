@@ -37,9 +37,9 @@ ifdef RELEASE
 	CFLAGS += --release
 else
 	QFLAGS += -display none \
-	          -action reboot=shutdown \
+	          -no-reboot \
 	          -no-shutdown \
-	          -d mmu,cpu_reset
+	          -d cpu_reset
 endif
 
 KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
