@@ -7,3 +7,6 @@ members = ["kernel", "userspace/*"]
 
 [profile.dev]
 opt-level = 1
+
+[profile.release]
+overflow-checks = true
