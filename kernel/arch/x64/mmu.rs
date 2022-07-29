@@ -319,8 +319,8 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn map_region(&mut self, from: VirtAddr, to: PhysAddr, pages: usize, perms: usize) {
-        assert!(from.0.is_page_aligned());
-        assert!(to.0.is_page_aligned());
+        assert!(from.is_page_aligned());
+        assert!(to.is_page_aligned());
 
         let size = pages * PAGE_SIZE;
 
@@ -345,8 +345,8 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn map_region_large(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize) {
-        assert!(from.0.is_lpage_aligned());
-        assert!(to.0.is_lpage_aligned());
+        assert!(from.is_lpage_aligned());
+        assert!(to.is_lpage_aligned());
 
         let size = lpages * PAGE_SIZE_LARGE;
 

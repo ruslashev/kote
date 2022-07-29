@@ -118,10 +118,10 @@ pub trait RootPageDirOps {
     fn map_region_large(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: usize) {
-        let beg = addr.0.page_round_down();
-        let end = addr.0.checked_add(size).unwrap().page_round_up();
+        let beg = addr.page_round_down();
+        let end = (addr + size).page_round_up();
 
-        for page_addr in (beg..end).step_by(arch::mmu::PAGE_SIZE) {
+        for page_addr in (beg.0..end.0).step_by(arch::mmu::PAGE_SIZE) {
             let page = pg_alloc::alloc_page();
 
             self.map_page_at_addr(page, VirtAddr(page_addr), perms);

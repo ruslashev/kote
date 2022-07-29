@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::arch::mmu::{PAGE_SIZE, PAGE_SIZE_LARGE};
+use crate::mm::types::{PhysAddr, VirtAddr};
 
 pub trait PowerOfTwoOps: Copy {
     fn is_po2_aligned(self, po2: Self) -> bool;
@@ -66,6 +67,55 @@ impl PowerOfTwoOps for $type {
 }
 
 impl_po2_ops!(u32 u64 usize);
+
+macro_rules! impl_po2_ops_for_newtypes {
+    ( $( $type:ident )+ ) => {
+        $(
+impl PowerOfTwoOps for $type {
+    #[inline]
+    fn is_po2_aligned(self, po2: Self) -> bool {
+        self.0.is_po2_aligned(po2.0)
+    }
+    #[inline]
+    fn po2_round_down(self, po2: Self) -> Self {
+        Self(self.0.po2_round_down(po2.0))
+    }
+    #[inline]
+    fn po2_round_up(self, po2: Self) -> Self {
+        Self(self.0.po2_round_up(po2.0))
+    }
+
+    #[inline]
+    fn is_page_aligned(self) -> bool {
+        self.0.is_page_aligned()
+    }
+    #[inline]
+    fn page_round_down(self) -> Self {
+        Self(self.0.page_round_down())
+    }
+    #[inline]
+    fn page_round_up(self) -> Self {
+        Self(self.0.page_round_up())
+    }
+
+    #[inline]
+    fn is_lpage_aligned(self) -> bool {
+        self.0.is_lpage_aligned()
+    }
+    #[inline]
+    fn lpage_round_down(self) -> Self {
+        Self(self.0.lpage_round_down())
+    }
+    #[inline]
+    fn lpage_round_up(self) -> Self {
+        Self(self.0.lpage_round_up())
+    }
+}
+        )*
+    }
+}
+
+impl_po2_ops_for_newtypes!(VirtAddr PhysAddr);
 
 pub trait Bytes: Sized {
     fn to_bytes(self) -> usize;
