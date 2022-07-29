@@ -4,6 +4,8 @@
 
 global start
 global mb_info
+global stack_guard_top
+global stack_guard_bot
 
 extern kmain
 extern __sbss
@@ -274,9 +276,13 @@ pdpt:
 	resb 4096
 pd:
 	resb 4096
-mb_info:
-	resq 1
+stack_guard_top:
+	resb 4096
 stack_topmost:
 	resb KERNEL_STACK_SZ
 stack_botmost:
+stack_guard_bot:
+	resb 4096
+mb_info:
+	resq 1
 

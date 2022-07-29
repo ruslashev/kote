@@ -299,6 +299,7 @@ impl RootPageDirOps for PageMapLevel4 {
         let pte = self.walk_dir(addr, true).unwrap();
         page.inc_refc();
 
+        // TODO: this clears just-allocated page
         if pte.present() {
             pte.pointed_addr().dec_page_refc();
             pte.set_scalar(pte.scalar as usize & !PRESENT);
@@ -337,10 +338,10 @@ impl RootPageDirOps for PageMapLevel4 {
 
         for page in 0..pages {
             let vaddr = from + page * PAGE_SIZE;
-            let pde = self.walk_dir_large(vaddr, true).unwrap();
+            let pte = self.walk_dir(vaddr, true).unwrap();
             let addr = to.0 + page * PAGE_SIZE;
 
-            pde.set_scalar(addr | perms);
+            pte.set_scalar(addr | perms);
         }
     }
 
@@ -367,6 +368,29 @@ impl RootPageDirOps for PageMapLevel4 {
             let addr = to.0 + page * PAGE_SIZE_LARGE;
 
             pde.set_scalar(addr | perms | LARGE);
+        }
+    }
+
+    fn unmap_region(&mut self, from: VirtAddr, pages: usize) {
+        assert!(from.is_page_aligned());
+
+        for page in 0..pages {
+            let vaddr = from + page * PAGE_SIZE;
+            if let Some(pte) = self.walk_dir(vaddr, false) {
+                // TODO: this leaks pages
+                pte.set_scalar(pte.scalar as usize & !PRESENT);
+            }
+        }
+    }
+
+    fn unmap_region_large(&mut self, from: VirtAddr, lpages: usize) {
+        assert!(from.is_lpage_aligned());
+
+        for page in 0..lpages {
+            let vaddr = from + page * PAGE_SIZE_LARGE;
+            if let Some(pde) = self.walk_dir_large(vaddr, false) {
+                pde.set_scalar(pde.scalar as usize & !(PRESENT | LARGE));
+            }
         }
     }
 }
