@@ -269,7 +269,7 @@ fn parse_elf_sections(header: *const u32) -> SectionInfo {
     unsafe {
         let num_shdrs = header.offset(2).read() as usize;
         let shstrtab_idx = header.offset(4).read() as usize;
-        let shdrs_addr = header.offset(5) as u64;
+        let shdrs_addr = header.offset(5) as usize;
         let shdrs = (shdrs_addr + KERNEL_BASE) as *const Elf64Shdr;
 
         SectionInfo {

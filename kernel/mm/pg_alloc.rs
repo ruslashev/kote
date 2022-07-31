@@ -7,7 +7,7 @@ use core::ptr::{addr_of, addr_of_mut, NonNull};
 
 use crate::arch::{mmu, KERNEL_BASE};
 use crate::bootloader::{BootloaderInfo, Region, SectionInfoIterator};
-use crate::mm::types::{Address, PhysAddr, VirtAddr};
+use crate::mm::types::{PhysAddr, VirtAddr};
 use crate::spinlock::Mutex;
 use crate::types::PowerOfTwoOps;
 
@@ -129,15 +129,15 @@ pub fn get_pg_alloc_region(info: &BootloaderInfo) -> (usize, PhysAddr, usize) {
     let size_bytes = maxpages * size_of::<PageInfo>();
     let size_rounded = size_bytes.lpage_round_up();
 
-    (maxpages, PhysAddr::from_u64(alloc_start), size_rounded)
+    (maxpages, PhysAddr(alloc_start), size_rounded)
 }
 
-fn get_kernel_end(info: &BootloaderInfo) -> u64 {
+fn get_kernel_end(info: &BootloaderInfo) -> usize {
     let mut kernel_end = 0;
 
     for (_, &shdr) in SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()) {
         if shdr.sh_addr != 0 {
-            let mut end = shdr.sh_addr + shdr.sh_size;
+            let mut end = (shdr.sh_addr + shdr.sh_size) as usize;
             if end > KERNEL_BASE {
                 end -= KERNEL_BASE;
             }

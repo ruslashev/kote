@@ -11,7 +11,7 @@ pub mod interrupts;
 pub mod mmu;
 pub mod uart;
 
-pub const KERNEL_BASE: u64 = 0xffffff8000000000;
+pub const KERNEL_BASE: usize = 0xffffff8000000000;
 
 pub const USER_STACK_START: VirtAddr = VirtAddr(0x0000001000000000);
 pub const USER_STACK_SIZE: usize = 4 * mmu::PAGE_SIZE;

@@ -71,13 +71,12 @@ impl<'i> SectionInfoIterator<'i> {
         let shstrtab = unsafe {
             let idx = info.shstrtab_idx;
             let shdr = info.shdrs.add(idx).read();
-            let addr = if shdr.sh_addr < KERNEL_BASE {
-                shdr.sh_addr + KERNEL_BASE
-            } else {
-                shdr.sh_addr
-            } as *const u8;
+            let mut addr = shdr.sh_addr as usize;
+            if addr < KERNEL_BASE {
+                addr += KERNEL_BASE
+            };
             let size = shdr.sh_size as usize;
-            slice::from_raw_parts(addr, size)
+            slice::from_raw_parts(addr as *const u8, size)
         };
 
         SectionInfoIterator {

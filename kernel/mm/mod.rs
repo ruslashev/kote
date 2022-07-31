@@ -32,12 +32,7 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
 
     let phys_size = maxpages * mmu::PAGE_SIZE;
     let lpages = phys_size.div_ceil(mmu::PAGE_SIZE_LARGE);
-    root_dir.map_region_large(
-        VirtAddr::from_u64(arch::KERNEL_BASE),
-        PhysAddr(0),
-        lpages,
-        phys_flags,
-    );
+    root_dir.map_region_large(VirtAddr(arch::KERNEL_BASE), PhysAddr(0), lpages, phys_flags);
 
     println_serial!("Mapping stack guards...");
 
