@@ -5,7 +5,7 @@
 pub mod pg_alloc;
 pub mod types;
 
-use self::types::{Address, PhysAddr, VirtAddr};
+use self::types::{PhysAddr, VirtAddr};
 use crate::arch::{self, mmu, RootPageDir};
 use crate::bootloader::BootloaderInfo;
 use crate::mm::types::RootPageDirOps;

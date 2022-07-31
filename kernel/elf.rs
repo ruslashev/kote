@@ -91,8 +91,10 @@ macro_rules! check_field {
     ($var:ident, $expected:expr) => {{
         assert!(
             $var == $expected,
-            concat!("bad ", stringify!($var), " ({}), expected ", stringify!($expected), " ({})"),
+            "bad {} ({}), expected {} ({})",
+            stringify!($var),
             $var,
+            stringify!($expected),
             $expected
         )
     }};
@@ -121,13 +123,11 @@ pub fn load(process: &mut Process, elf: &[u8]) {
     check_field!(e_type, ET_EXEC);
     check_field!(e_machine, EM_X86_64);
     check_field!(e_version, EV_CURRENT);
+    check_field!(e_phentsize, size_of::<Elf64Phdr>() as u16);
 
-    let phdr_sizeof = size_of::<Elf64Phdr>() as u16;
-    check_field!(e_phentsize, phdr_sizeof);
-
-    input = &elf[e_phoff as usize..];
+    let mut phdrs = &elf[e_phoff as usize..];
     for _ in 0..e_phnum {
-        load_program_header(process, &mut input, elf);
+        load_program_header(process, &mut phdrs, elf);
     }
 
     process.registers.set_program_counter(e_entry as usize);
