@@ -37,24 +37,24 @@ pub const USER_ACCESSIBLE: usize = 1 << 2;
 pub const LARGE: usize = 1 << 7;
 
 pub struct PageMapLevel4 {
-    addr: usize,
+    addr: PhysAddr,
 }
 
 impl PageMapLevel4 {
     pub const fn empty() -> Self {
-        Self { addr: 0 }
+        Self { addr: PhysAddr(0) }
     }
 
     fn as_slice<'a>(&self) -> &'a [PageMapLevel4Entry] {
         unsafe {
-            let ptr = self.addr as *const PageMapLevel4Entry;
+            let ptr = self.addr.into_vaddr().0 as *const PageMapLevel4Entry;
             slice::from_raw_parts(ptr, ENTRIES)
         }
     }
 
     fn as_slice_mut<'a>(&mut self) -> &'a mut [PageMapLevel4Entry] {
         unsafe {
-            let ptr = self.addr as *mut PageMapLevel4Entry;
+            let ptr = self.addr.into_vaddr().0 as *mut PageMapLevel4Entry;
             slice::from_raw_parts_mut(ptr, ENTRIES)
         }
     }
@@ -202,11 +202,11 @@ impl RootPageDirOps for PageMapLevel4 {
     fn new() -> Self {
         let dir = pg_alloc::alloc_page().inc_refc();
         let phys = dir.to_physaddr();
-        PageMapLevel4 { addr: phys.0 }
+        PageMapLevel4 { addr: phys }
     }
 
     fn switch_to_this(&self) {
-        let phys = self.addr as u64;
+        let phys = self.addr.0 as u64;
         write_reg!(cr3, phys);
     }
 
