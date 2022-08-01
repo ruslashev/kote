@@ -42,7 +42,7 @@ $(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
 LOG ?= qemu.log
 
 symbolize:
-	@cat $(LOG) | grep -A 100 Backtrace: | tail -n +2 | awk '{print $$2}' | xargs \
-	        $(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN) | awk '{print NR ") " $$0}'
+	@cat $(LOG) | grep '[0-9]\+)' | awk '{print $$2}' | xargs \
+	        $(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN)
 
 .PHONY: disassembly bochs gdb symbolize
