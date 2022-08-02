@@ -147,25 +147,20 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
         return;
     }
 
-    let perms = if p_flags & PF_W == 0 {
-        mmu::USER_ACCESSIBLE
-    } else {
-        mmu::USER_ACCESSIBLE | mmu::WRITABLE
-    };
-
+    let vaddr = VirtAddr::from_u64(p_vaddr);
     let size_in_mem = p_memsz as usize;
-    let start = p_vaddr as *mut u8;
+    let slice = unsafe { vaddr.into_slice_mut(size_in_mem) };
     let file_pos = p_offset as usize;
     let file_len = p_filesz as usize;
 
-    process
-        .root_dir
-        .alloc_range(VirtAddr::from_u64(p_vaddr), size_in_mem, perms);
-
-    let slice = unsafe { core::slice::from_raw_parts_mut(start, size_in_mem) };
+    process.root_dir.alloc_range(vaddr, size_in_mem, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
 
     assert!(file_len <= size_in_mem);
     slice.copy_from_slice(&elf[file_pos..file_pos + file_len]);
 
     slice[file_len..size_in_mem].fill(0);
+
+    if p_flags & PF_W == 0 {
+        process.root_dir.change_range_perms(vaddr, size_in_mem, mmu::USER_ACCESSIBLE);
+    }
 }

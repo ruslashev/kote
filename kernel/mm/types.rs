@@ -120,6 +120,7 @@ pub trait RootPageDirOps {
     fn map_region_large(&mut self, from: VirtAddr, to: PhysAddr, lpages: usize, perms: usize);
     fn unmap_region(&mut self, from: VirtAddr, pages: usize);
     fn unmap_region_large(&mut self, from: VirtAddr, lpages: usize);
+    fn change_range_perms(&mut self, from: VirtAddr, size: usize, perms: usize);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: usize) {
         let beg = addr.page_round_down();

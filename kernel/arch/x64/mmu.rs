@@ -421,4 +421,16 @@ impl RootPageDirOps for PageMapLevel4 {
             }
         }
     }
+
+    fn change_range_perms(&mut self, from: VirtAddr, size: usize, perms: usize) {
+        assert!(from.is_page_aligned());
+
+        for page in (from.0..from.0 + size).step_by(PAGE_SIZE) {
+            let vaddr = VirtAddr(page);
+            if let Some(pte) = self.walk_dir(vaddr, false) {
+                let paddr = pte.pointed_addr().0;
+                pte.set_scalar(paddr | perms);
+            }
+        }
+    }
 }
