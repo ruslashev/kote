@@ -214,7 +214,7 @@ impl RootPageDirOps for PageMapLevel4 {
             VirtAddr(arch::KERNEL_BASE),
             PhysAddr(0),
             64,
-            PRESENT | WRITABLE | USER_ACCESSIBLE
+            PRESENT | WRITABLE | USER_ACCESSIBLE,
         );
 
         // This is also weird because we access FB through kernel vaddr (higher-half)
@@ -224,11 +224,7 @@ impl RootPageDirOps for PageMapLevel4 {
         let pages = fb_size as usize / PAGE_SIZE_LARGE;
         dir.map_region_large(fb_addr.into_vaddr(), fb_addr, pages, PRESENT | USER_ACCESSIBLE);
 
-        dir.alloc_range(
-            arch::USER_STACK_START,
-            arch::USER_STACK_SIZE,
-            WRITABLE | USER_ACCESSIBLE,
-        );
+        dir.alloc_range(arch::USER_STACK_START, arch::USER_STACK_SIZE, WRITABLE | USER_ACCESSIBLE);
 
         dir
     }

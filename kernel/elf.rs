@@ -153,7 +153,9 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
     let file_pos = p_offset as usize;
     let file_len = p_filesz as usize;
 
-    process.root_dir.alloc_range(vaddr, size_in_mem, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
+    process
+        .root_dir
+        .alloc_range(vaddr, size_in_mem, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
 
     assert!(file_len <= size_in_mem);
     slice.copy_from_slice(&elf[file_pos..file_pos + file_len]);
@@ -161,6 +163,8 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
     slice[file_len..size_in_mem].fill(0);
 
     if p_flags & PF_W == 0 {
-        process.root_dir.change_range_perms(vaddr, size_in_mem, mmu::USER_ACCESSIBLE);
+        process
+            .root_dir
+            .change_range_perms(vaddr, size_in_mem, mmu::USER_ACCESSIBLE);
     }
 }
