@@ -3,10 +3,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::bootloader::BootloaderInfo;
-use crate::mm;
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
 use crate::spinlock::SpinlockMutex;
-use crate::{arch, elf};
+use crate::{arch, elf, mm};
 
 static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
@@ -30,9 +29,7 @@ impl Process {
 
         process.root_dir.switch_to_this();
 
-        process
-            .registers
-            .set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
+        process.registers.set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
 
         elf::load(&mut process, bytes);
 

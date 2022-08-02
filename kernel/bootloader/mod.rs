@@ -4,9 +4,8 @@
 
 mod multiboot;
 
-use core::fmt;
 use core::ops::Range;
-use core::{slice, str};
+use core::{fmt, slice, str};
 
 use crate::arch::KERNEL_BASE;
 use crate::elf::Elf64Shdr;

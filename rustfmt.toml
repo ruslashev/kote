@@ -3,10 +3,12 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 newline_style = "Unix"
+chain_width = 90
 fn_call_width = 90
 single_line_if_else_max_width = 60
 
 unstable_features = true
 condense_wildcard_suffixes = true
-reorder_impl_items = true
 group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+reorder_impl_items = true
