@@ -61,3 +61,7 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
 
     root_dir
 }
+
+pub fn switch_to_kernel_root_dir() {
+    ROOT_KERN_DIR.lock().switch_to_this();
+}

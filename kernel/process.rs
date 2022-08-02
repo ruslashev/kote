@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use crate::bootloader::BootloaderInfo;
+use crate::mm;
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
 use crate::spinlock::SpinlockMutex;
 use crate::{arch, elf};
@@ -20,21 +22,13 @@ pub struct Process {
 }
 
 impl Process {
-    fn from_elf(bytes: &[u8]) -> Self {
+    fn from_elf(bytes: &[u8], info: &BootloaderInfo) -> Self {
         let mut process = Process {
-            root_dir: arch::RootPageDir::new(),
+            root_dir: arch::RootPageDir::new_userspace_root_dir(info),
             registers: arch::RegisterFrame::default(),
         };
 
-        arch::mmu::prepare_userspace_root_dir(&mut process.root_dir);
-
         process.root_dir.switch_to_this();
-
-        process.root_dir.alloc_range(
-            arch::USER_STACK_START,
-            arch::USER_STACK_SIZE,
-            arch::mmu::WRITABLE | arch::mmu::USER_ACCESSIBLE,
-        );
 
         process
             .registers
@@ -42,12 +36,14 @@ impl Process {
 
         elf::load(&mut process, bytes);
 
+        mm::switch_to_kernel_root_dir();
+
         process
     }
 }
 
-pub fn init() {
+pub fn init(info: &BootloaderInfo) {
     let mut processes = PROCESSES.lock();
 
-    processes[0] = Some(Process::from_elf(LOOP_ELF));
+    processes[0] = Some(Process::from_elf(LOOP_ELF, info));
 }

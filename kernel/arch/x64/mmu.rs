@@ -5,6 +5,7 @@
 use core::slice;
 
 use crate::arch::{self, LeafDirEntry, LeafDirEntryLarge};
+use crate::bootloader::BootloaderInfo;
 use crate::mm::pg_alloc;
 use crate::mm::types::{Address, PhysAddr, RootPageDirOps, VirtAddr};
 use crate::types::{Bytes, KiB, MiB, PowerOfTwoOps};
@@ -205,6 +206,33 @@ impl RootPageDirOps for PageMapLevel4 {
         PageMapLevel4 { addr: phys }
     }
 
+    fn new_userspace_root_dir(info: &BootloaderInfo) -> Self {
+        let mut dir = Self::new();
+
+        // TODO: this should be done another way
+        dir.map_region_large(
+            VirtAddr(arch::KERNEL_BASE),
+            PhysAddr(0),
+            64,
+            PRESENT | WRITABLE | USER_ACCESSIBLE
+        );
+
+        // This is also weird because we access FB through kernel vaddr (higher-half)
+        let fb = &info.framebuffer;
+        let fb_addr = PhysAddr::from_u64(fb.addr);
+        let fb_size = fb.pitch * fb.height * u32::from(fb.bpp) / 8;
+        let pages = fb_size as usize / PAGE_SIZE_LARGE;
+        dir.map_region_large(fb_addr.into_vaddr(), fb_addr, pages, PRESENT | USER_ACCESSIBLE);
+
+        dir.alloc_range(
+            arch::USER_STACK_START,
+            arch::USER_STACK_SIZE,
+            WRITABLE | USER_ACCESSIBLE,
+        );
+
+        dir
+    }
+
     fn switch_to_this(&self) {
         let phys = self.addr.0 as u64;
         write_reg!(cr3, phys);
@@ -393,9 +421,4 @@ impl RootPageDirOps for PageMapLevel4 {
             }
         }
     }
-}
-
-pub fn prepare_userspace_root_dir(_root_dir: &mut PageMapLevel4) {
-    // Temporary
-    // root_dir.as_slice_mut().copy_from_slice(ROOT_KERN_DIR.guard().as_slice());
 }
