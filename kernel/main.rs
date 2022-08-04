@@ -12,6 +12,7 @@
 #![feature(const_trait_impl)]
 #![feature(fn_traits)]
 #![feature(int_roundings)]
+#![feature(let_chains)]
 #![feature(once_cell)]
 
 #[macro_use]
@@ -27,6 +28,7 @@ mod elf;
 mod mm;
 mod panic;
 mod process;
+mod sched;
 mod serial;
 mod spinlock;
 mod types;

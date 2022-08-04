@@ -4,20 +4,27 @@
 
 use crate::bootloader::BootloaderInfo;
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
-use crate::spinlock::SpinlockMutex;
 use crate::{arch, elf, mm};
 
 static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
 // This doesn't have to a be a static array, but it is convenient for now
-const MAX_PROCESSES: usize = 32;
+pub const MAX_PROCESSES: usize = 32;
+pub static mut PROCESSES: [Option<Process>; MAX_PROCESSES] = [EMPTY_PROCESS; MAX_PROCESSES];
+
 const EMPTY_PROCESS: Option<Process> = None;
-static PROCESSES: SpinlockMutex<[Option<Process>; MAX_PROCESSES]> =
-    SpinlockMutex::new([EMPTY_PROCESS; MAX_PROCESSES]);
 
 pub struct Process {
     pub root_dir: arch::RootPageDir,
     pub registers: arch::RegisterFrame,
+    pub state: State,
+}
+
+#[derive(PartialEq)]
+pub enum State {
+    Runnable,
+    Running,
+    Stopped,
 }
 
 impl Process {
@@ -25,6 +32,7 @@ impl Process {
         let mut process = Process {
             root_dir: arch::RootPageDir::new_userspace_root_dir(info),
             registers: arch::RegisterFrame::default(),
+            state: State::Runnable,
         };
 
         process.root_dir.switch_to_this();
@@ -37,10 +45,13 @@ impl Process {
 
         process
     }
+
+    pub fn run(&self) {
+    }
 }
 
 pub fn init(info: &BootloaderInfo) {
-    let mut processes = PROCESSES.lock();
-
-    processes[0] = Some(Process::from_elf(LOOP_ELF, info));
+    unsafe {
+        PROCESSES[0] = Some(Process::from_elf(LOOP_ELF, info));
+    }
 }

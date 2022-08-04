@@ -12,6 +12,11 @@ use crate::mm::types::RootPageDirOps;
 use crate::spinlock::Mutex;
 use crate::types::PowerOfTwoOps;
 
+extern "C" {
+    fn stack_guard_top();
+    fn stack_guard_bot();
+}
+
 static ROOT_KERN_DIR: Mutex<RootPageDir> = Mutex::new(arch::EMPTY_ROOT_DIR);
 
 pub fn init(info: &mut BootloaderInfo) {
@@ -36,10 +41,6 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
 
     println_serial!("Mapping stack guards...");
 
-    extern "C" {
-        fn stack_guard_top();
-        fn stack_guard_bot();
-    }
     let top = VirtAddr(stack_guard_top as usize);
     let bot = VirtAddr(stack_guard_bot as usize);
     let top_large = top.lpage_round_down();
