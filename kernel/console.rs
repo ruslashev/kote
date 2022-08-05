@@ -107,7 +107,6 @@ impl core::fmt::Write for Console {
 #[derive(Debug)]
 struct Framebuffer {
     addr: VirtAddr,
-    width: u32,
     height: u32,
     pitch: u32,
     bytes_per_pixel: u8,
@@ -119,7 +118,6 @@ impl Framebuffer {
 
         Framebuffer {
             addr: fb_addr,
-            width: fb.width,
             height: fb.height,
             pitch: fb.pitch,
             bytes_per_pixel: fb.bpp / 8,

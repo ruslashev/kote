@@ -46,13 +46,6 @@ impl PageMapLevel4 {
         Self { addr: PhysAddr(0) }
     }
 
-    fn as_slice<'a>(&self) -> &'a [PageMapLevel4Entry] {
-        unsafe {
-            let ptr = self.addr.into_vaddr().0 as *const PageMapLevel4Entry;
-            slice::from_raw_parts(ptr, ENTRIES)
-        }
-    }
-
     fn as_slice_mut<'a>(&mut self) -> &'a mut [PageMapLevel4Entry] {
         unsafe {
             let ptr = self.addr.into_vaddr().0 as *mut PageMapLevel4Entry;

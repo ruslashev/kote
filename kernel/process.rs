@@ -20,7 +20,7 @@ pub struct Process {
     pub state: State,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum State {
     Runnable,
     Running,
