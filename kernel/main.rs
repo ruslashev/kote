@@ -12,7 +12,6 @@
 #![feature(const_trait_impl)]
 #![feature(fn_traits)]
 #![feature(int_roundings)]
-#![feature(let_chains)]
 #![feature(once_cell)]
 
 #[macro_use]
