@@ -2,12 +2,47 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::process::{PROCESSES, MAX_PROCESSES, State};
+use crate::bootloader::BootloaderInfo;
+use crate::process::{Process, State};
 
-static mut SCHEDULER: Scheduler = Scheduler { proc_idx: 0 };
+static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
+
+const MAX_PROCESSES: usize = 32;
+
+static mut SCHEDULER: Scheduler = Scheduler::new();
 
 struct Scheduler {
-    proc_idx: usize,
+    current_idx: usize,
+    processes: [Option<Process>; MAX_PROCESSES],
+}
+
+impl Scheduler {
+    const EMPTY_PROCESS: Option<Process> = None;
+
+    const fn new() -> Self {
+        Self {
+            current_idx: 0,
+            processes: [Self::EMPTY_PROCESS; MAX_PROCESSES],
+        }
+    }
+
+    fn current(&self) -> Option<&Process> {
+        self.processes[self.current_idx].as_ref()
+    }
+
+    fn get_next(&self) -> Option<&Process> {
+        for idx in RoundRobinIterator::new(self.current_idx, MAX_PROCESSES) {
+            if let Some(proc) = self.processes[idx].as_ref() && proc.state == State::Runnable {
+                return Some(proc);
+            }
+        }
+
+        if let Some(current) = self.current() && current.state == State::Running {
+            return Some(current);
+        }
+
+        None
+    }
 }
 
 struct RoundRobinIterator {
@@ -41,16 +76,23 @@ impl RoundRobinIterator {
     }
 }
 
-pub unsafe fn next() {
-    for idx in RoundRobinIterator::new(SCHEDULER.proc_idx, MAX_PROCESSES) {
-        if let Some(proc) = &PROCESSES[idx] && proc.state == State::Runnable {
-            proc.run();
+pub fn init(info: &BootloaderInfo) {
+    unsafe {
+        SCHEDULER.processes[0] = Some(Process::from_elf(LOOP_ELF, info));
+    }
+}
+
+pub fn next() {
+    unsafe {
+        match SCHEDULER.get_next() {
+            Some(proc) => run(proc),
+            None => idle(),
         }
     }
+}
 
-    let current = PROCESSES[SCHEDULER.proc_idx].as_ref().unwrap();
+fn run(_proc: &Process) {
+}
 
-    if current.state == State::Running {
-        current.run();
-    }
+fn idle() {
 }
