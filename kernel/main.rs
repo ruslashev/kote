@@ -35,14 +35,15 @@ mod types;
 #[no_mangle]
 pub extern "C" fn kmain() {
     serial::init();
+
+    println_serial!("Booting kote...");
+
     let mut info = bootloader::get_info();
     mm::init(&mut info);
     console::init(&info);
 
     arch::interrupts::init();
     arch::interrupts::enable();
-
-    println!("Booting kote...");
 
     println!("Available memory:");
     print!("{}", &info.free_areas);
@@ -54,5 +55,5 @@ pub extern "C" fn kmain() {
 
     sched::next();
 
-    loop {}
+    println!("Kernel exit");
 }
