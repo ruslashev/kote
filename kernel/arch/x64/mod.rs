@@ -5,7 +5,7 @@
 use crate::mm::types::VirtAddr;
 
 #[macro_use]
-mod asm;
+pub mod asm;
 pub mod backtrace;
 pub mod interrupts;
 pub mod mmu;

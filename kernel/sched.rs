@@ -4,6 +4,7 @@
 
 use crate::bootloader::BootloaderInfo;
 use crate::process::{Process, State};
+use crate::arch;
 
 static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
@@ -30,18 +31,28 @@ impl Scheduler {
         self.processes[self.current_idx].as_ref()
     }
 
-    fn get_next(&self) -> Option<&Process> {
+    fn current_mut(&mut self) -> Option<&mut Process> {
+        self.processes[self.current_idx].as_mut()
+    }
+
+    fn get_next(&self) -> TaskSwitch {
         for idx in RoundRobinIterator::new(self.current_idx, MAX_PROCESSES) {
             if let Some(proc) = self.processes[idx].as_ref() && proc.state == State::Runnable {
-                return Some(proc);
+                return TaskSwitch::NewTask(proc);
             }
         }
 
         if let Some(current) = self.current() && current.state == State::Running {
-            return Some(current);
+            return TaskSwitch::SameTask(current);
         }
 
-        None
+        TaskSwitch::Idle
+    }
+
+    fn preempt_current(&mut self) {
+        if let Some(current) = self.current_mut() {
+            current.state = State::Runnable;
+        }
     }
 }
 
@@ -76,17 +87,30 @@ impl RoundRobinIterator {
     }
 }
 
+enum TaskSwitch<'a> {
+    NewTask(&'a Process),
+    SameTask(&'a Process),
+    Idle,
+}
+
 pub fn init(info: &BootloaderInfo) {
     unsafe {
-        SCHEDULER.processes[0] = Some(Process::from_elf(LOOP_ELF, info));
+        let mut loop_proc = Process::from_elf(LOOP_ELF, info);
+        loop_proc.state = State::Running;
+
+        SCHEDULER.processes[0] = Some(loop_proc);
     }
 }
 
 pub fn next() {
     unsafe {
         match SCHEDULER.get_next() {
-            Some(proc) => run(proc),
-            None => idle(),
+            TaskSwitch::NewTask(proc) => {
+                SCHEDULER.preempt_current();
+                run(proc);
+            }
+            TaskSwitch::SameTask(proc) => run(proc),
+            TaskSwitch::Idle => idle(),
         }
     }
 }
@@ -95,4 +119,9 @@ fn run(_proc: &Process) {
 }
 
 fn idle() {
+    arch::interrupts::enable();
+
+    loop {
+        arch::asm::idle();
+    }
 }

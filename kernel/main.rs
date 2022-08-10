@@ -52,5 +52,7 @@ pub extern "C" fn kmain() {
 
     sched::init(&info);
 
+    sched::next();
+
     loop {}
 }

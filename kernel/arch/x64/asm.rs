@@ -92,3 +92,9 @@ macro_rules! write_reg {
         }
     }
 }
+
+pub fn idle() {
+    unsafe {
+        asm!("hlt");
+    }
+}
