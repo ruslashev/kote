@@ -29,6 +29,7 @@ mod panic;
 mod process;
 mod sched;
 mod serial;
+mod small_vec;
 mod spinlock;
 mod types;
 
