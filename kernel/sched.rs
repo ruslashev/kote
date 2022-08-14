@@ -2,88 +2,50 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::cell::OnceCell;
+
+use crate::arch;
 use crate::bootloader::BootloaderInfo;
 use crate::process::{Process, State};
-use crate::arch;
+use crate::small_vec::SmallVec;
 
 static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
-const MAX_PROCESSES: usize = 32;
-
-static mut SCHEDULER: Scheduler = Scheduler::new();
+static mut SCHEDULER: OnceCell<Scheduler> = OnceCell::new();
 
 struct Scheduler {
     current_idx: usize,
-    processes: [Option<Process>; MAX_PROCESSES],
+    processes: SmallVec<Process>,
 }
 
 impl Scheduler {
-    const EMPTY_PROCESS: Option<Process> = None;
-
-    const fn new() -> Self {
+    fn new() -> Self {
         Self {
             current_idx: 0,
-            processes: [Self::EMPTY_PROCESS; MAX_PROCESSES],
+            processes: SmallVec::new(),
         }
     }
 
-    fn current(&self) -> Option<&Process> {
-        self.processes[self.current_idx].as_ref()
-    }
-
-    fn current_mut(&mut self) -> Option<&mut Process> {
-        self.processes[self.current_idx].as_mut()
+    fn current(&self) -> &Process {
+        &self.processes[self.current_idx]
     }
 
     fn get_next(&self) -> TaskSwitch {
-        for idx in RoundRobinIterator::new(self.current_idx, MAX_PROCESSES) {
-            if let Some(proc) = self.processes[idx].as_ref() && proc.state == State::Runnable {
+        for proc in self.processes.iter_round_robin(self.current_idx) {
+            if proc.state == State::Runnable {
                 return TaskSwitch::NewTask(proc);
             }
         }
 
-        if let Some(current) = self.current() && current.state == State::Running {
-            return TaskSwitch::SameTask(current);
+        if self.current().state == State::Running {
+            return TaskSwitch::SameTask(self.current());
         }
 
         TaskSwitch::Idle
     }
 
     fn preempt_current(&mut self) {
-        if let Some(current) = self.current_mut() {
-            current.state = State::Runnable;
-        }
-    }
-}
-
-struct RoundRobinIterator {
-    index: usize,
-    start: usize,
-    range: usize,
-}
-
-impl Iterator for RoundRobinIterator {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.index += 1;
-        self.index %= self.range;
-
-        if self.index == self.start {
-            None
-        } else {
-            Some(self.index)
-        }
-    }
-}
-
-impl RoundRobinIterator {
-    fn new(start: usize, range: usize) -> Self {
-        Self {
-            index: start,
-            start,
-            range,
-        }
+        self.processes[self.current_idx].state = State::Runnable;
     }
 }
 
@@ -95,18 +57,19 @@ enum TaskSwitch<'a> {
 
 pub fn init(info: &BootloaderInfo) {
     unsafe {
-        let mut loop_proc = Process::from_elf(LOOP_ELF, info);
-        loop_proc.state = State::Running;
+        let mut sched = Scheduler::new();
+        sched.processes.push(Process::from_elf(LOOP_ELF, info));
+        sched.processes[0].state = State::Running;
 
-        SCHEDULER.processes[0] = Some(loop_proc);
+        assert!(SCHEDULER.set(sched).is_ok());
     }
 }
 
 pub fn next() {
     unsafe {
-        match SCHEDULER.get_next() {
+        match SCHEDULER.get().unwrap().get_next() {
             TaskSwitch::NewTask(proc) => {
-                SCHEDULER.preempt_current();
+                SCHEDULER.get_mut().unwrap().preempt_current();
                 run(proc);
             }
             TaskSwitch::SameTask(proc) => run(proc),

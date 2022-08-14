@@ -53,6 +53,14 @@ impl<T> SmallVec<T> {
     unsafe fn last_element(&mut self) -> *mut T {
         self.storage.add(self.size - 1)
     }
+
+    pub fn iter_round_robin(&self, start: usize) -> RoundRobinIterator<T> {
+        RoundRobinIterator {
+            index: start,
+            start,
+            smvec: self,
+        }
+    }
 }
 
 impl<T> Index<usize> for SmallVec<T> {
@@ -78,6 +86,27 @@ impl<T> Drop for SmallVec<T> {
         for i in 0..self.size {
             let elem = unsafe { self.storage.add(i).read() };
             drop(elem);
+        }
+    }
+}
+
+pub struct RoundRobinIterator<'a, T> {
+    index: usize,
+    start: usize,
+    smvec: &'a SmallVec<T>,
+}
+
+impl<'a, T> Iterator for RoundRobinIterator<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.index += 1;
+        self.index %= self.smvec.size;
+
+        if self.index == self.start {
+            None
+        } else {
+            Some(&self.smvec[self.index])
         }
     }
 }
