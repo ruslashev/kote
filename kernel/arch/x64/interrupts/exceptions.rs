@@ -118,7 +118,7 @@ impl Exception {
  * │              r15               │ <- New RSP
  * └────────────────────────────────┘
  */
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 #[repr(C, packed)]
 pub struct ExceptionFrame {
     pub r15: u64,

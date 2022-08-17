@@ -6,13 +6,14 @@ use crate::bootloader::BootloaderInfo;
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
 use crate::{arch, elf, mm};
 
+#[derive(Copy, Clone)]
 pub struct Process {
     pub root_dir: arch::RootPageDir,
     pub registers: arch::RegisterFrame,
     pub state: State,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Runnable,
     Running,

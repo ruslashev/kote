@@ -37,6 +37,7 @@ pub const WRITABLE: usize = 1 << 1;
 pub const USER_ACCESSIBLE: usize = 1 << 2;
 pub const LARGE: usize = 1 << 7;
 
+#[derive(Clone, Copy)]
 pub struct PageMapLevel4 {
     addr: PhysAddr,
 }
