@@ -17,36 +17,36 @@ use crate::serial::SERIAL_LOCK;
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => {
-        $crate::printk::do_println(&format_args!($($arg)*), true, false, false);
-    };
+        $crate::printk::do_println(&format_args!($($arg)*), true, false, false)
+    }
 }
 
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::printk::do_println(&format_args!($($arg)*), false, false, false);
-    };
+        $crate::printk::do_println(&format_args!($($arg)*), false, false, false)
+    }
 }
 
 #[macro_export]
 macro_rules! println_force {
     ($($arg:tt)*) => {
-        $crate::printk::do_println(&format_args!($($arg)*), true, true, false);
-    };
+        $crate::printk::do_println(&format_args!($($arg)*), true, true, false)
+    }
 }
 
 #[macro_export]
 macro_rules! println_serial {
     ($($arg:tt)*) => {
-        $crate::printk::do_println(&format_args!($($arg)*), true, false, true);
-    };
+        $crate::printk::do_println(&format_args!($($arg)*), true, false, true)
+    }
 }
 
 #[macro_export]
 macro_rules! print_serial {
     ($($arg:tt)*) => {
-        $crate::printk::do_println(&format_args!($($arg)*), false, false, true);
-    };
+        $crate::printk::do_println(&format_args!($($arg)*), false, false, true)
+    }
 }
 
 pub fn do_println(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bool) {
