@@ -45,4 +45,9 @@ symbolize:
 	@cat $(LOG) | grep '[0-9]\+)' | awk '{print $$2}' | xargs \
 	        $(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN)
 
-.PHONY: disassembly bochs gdb symbolize
+ADDR ?= 0
+
+addr2line:
+	@$(ADDR2LINE) $(ADDR2LINE_FLAGS) -e $(KERNBIN) $(ADDR)
+
+.PHONY: disassembly bochs gdb symbolize addr2line
