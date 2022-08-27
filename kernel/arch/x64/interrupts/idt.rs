@@ -135,7 +135,7 @@ fn create_idt_entry(
 
     IDTEntry {
         handler_addr_low,
-        gdt_selector: GDT_KERN_CODE.into(),
+        gdt_selector: GDT_KERN_CODE,
         attributes,
         handler_addr_mid,
         handler_addr_top,

@@ -43,6 +43,8 @@ pub extern "C" fn kmain() {
     mm::init(&mut info);
     console::init(&info);
 
+    arch::init();
+
     arch::interrupts::init();
     arch::interrupts::enable();
 

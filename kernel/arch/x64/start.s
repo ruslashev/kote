@@ -3,9 +3,12 @@
 ; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 global start
-global mb_info
+global gdt
 global stack_guard_top
 global stack_guard_bot
+global int_stack_botmost
+global int_stack_guard_bot
+global mb_info
 
 extern kmain
 extern __sbss
@@ -13,6 +16,7 @@ extern __ebss
 
 %define KERNEL_BASE 0xffffff8000000000
 %define KERNEL_STACK_SZ 4096 * 4
+%define KERNEL_INT_STACK_SZ 4096 * 2
 
 %define RELOC(x) (x - KERNEL_BASE)
 
@@ -262,6 +266,8 @@ gdt:
 	dq RW      | S | K | Pr     ; kernel data
 	dq RW | Ex | S | U | Pr | L ; user code
 	dq RW      | S | U | Pr     ; user data
+	dq 0                        ; TSS low
+	dq 0                        ; TSS high
 .ptr:
 	dw $ - gdt - 1 ; size
 	dq gdt         ; offset (address)
@@ -282,6 +288,11 @@ stack_topmost:
 	resb KERNEL_STACK_SZ
 stack_botmost:
 stack_guard_bot:
+	resb 4096
+int_stack_topmost:
+	resb KERNEL_INT_STACK_SZ
+int_stack_botmost:
+int_stack_guard_bot:
 	resb 4096
 mb_info:
 	resq 1
