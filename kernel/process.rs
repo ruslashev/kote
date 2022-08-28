@@ -31,6 +31,7 @@ impl Process {
         process.root_dir.switch_to_this();
 
         process.registers.set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
+        process.registers.enable_interrupts();
 
         elf::load(&mut process, bytes);
 

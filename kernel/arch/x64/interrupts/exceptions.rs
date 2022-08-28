@@ -197,6 +197,11 @@ impl crate::mm::types::RegisterFrameOps for ExceptionFrame {
     fn set_stack_pointer(&mut self, addr: usize) {
         self.return_rsp = addr as u64;
     }
+
+    fn enable_interrupts(&mut self) {
+        let intr_flag = 1 << 9;
+        self.rflags |= intr_flag;
+    }
 }
 
 #[no_mangle]
