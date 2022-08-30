@@ -5,7 +5,6 @@
 use core::cell::OnceCell;
 
 use crate::arch;
-use crate::bootloader::BootloaderInfo;
 use crate::process::{Process, State};
 use crate::small_vec::SmallVec;
 use crate::spinlock::Mutex;
@@ -52,12 +51,12 @@ enum TaskSwitch {
     Idle,
 }
 
-pub fn init(info: &BootloaderInfo) {
+pub fn init() {
     static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
 
     let mut sched = Scheduler::new();
 
-    sched.processes.push_back(Process::from_elf(LOOP_ELF, info));
+    sched.processes.push_back(Process::from_elf(LOOP_ELF));
 
     assert!(SCHEDULER.lock().set(sched).is_ok());
 }

@@ -54,7 +54,7 @@ pub extern "C" fn kmain() {
     println!("Kernel sections:");
     print!("{}", info.section_headers.as_ref().unwrap());
 
-    sched::init(&info);
+    sched::init();
 
     sched::next();
 
