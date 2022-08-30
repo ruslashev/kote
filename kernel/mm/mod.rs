@@ -40,6 +40,9 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
     let lpages = phys_size.div_ceil(mmu::PAGE_SIZE_LARGE);
     root_dir.map_region_large(VirtAddr(arch::KERNEL_BASE), PhysAddr(0), lpages, phys_flags);
 
+    // Bochs hack where we can't have more than 2 GiB of RAM but its puts framebuffer at 3.5 GiB
+    root_dir.map_region_large(VirtAddr(0xffffff80e0000000), PhysAddr(0xe0000000), 64, phys_flags);
+
     println_serial!("Mapping stack guards...");
 
     let top = VirtAddr(stack_guard_top as usize);
