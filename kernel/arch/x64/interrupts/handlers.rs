@@ -28,5 +28,5 @@ pub(super) fn page_fault(_frame: &ExceptionFrame) {
         panic!("Kernel stack underflow");
     }
 
-    println!("Faulting addr = {:#x}", vaddr);
+    println_serial!("Faulting addr = {:#x}", vaddr);
 }

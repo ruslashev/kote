@@ -211,8 +211,8 @@ pub extern "C" fn exception_dispatch(rsp: u64) {
     let vec = frame.exc_vector;
     let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
 
-    println!("Exception {} occured: {}", vec, exc_handler.name);
-    println!("{}", frame);
+    println_serial!("Exception {} occured: {}", vec, exc_handler.name);
+    println_serial!("{}", frame);
 
     if let Some(handler) = exc_handler.handler {
         handler.call((frame,));

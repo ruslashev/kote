@@ -8,6 +8,7 @@ global stack_guard_top
 global stack_guard_bot
 global int_stack_botmost
 global int_stack_guard_bot
+global morestack
 global mb_info
 
 extern kmain
@@ -264,8 +265,8 @@ gdt:
 	dq 0                        ; null
 	dq RW | Ex | S | K | Pr | L ; kernel code
 	dq RW      | S | K | Pr     ; kernel data
-	dq RW | Ex | S | U | Pr | L ; user code
 	dq RW      | S | U | Pr     ; user data
+	dq RW | Ex | S | U | Pr | L ; user code
 	dq 0                        ; TSS low
 	dq 0                        ; TSS high
 .ptr:
@@ -294,6 +295,8 @@ int_stack_topmost:
 int_stack_botmost:
 int_stack_guard_bot:
 	resb 4096
+	resb KERNEL_INT_STACK_SZ
+morestack:
 mb_info:
 	resq 1
 

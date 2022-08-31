@@ -123,7 +123,7 @@ pub trait RootPageDirOps {
     fn change_range_perms(&mut self, from: VirtAddr, size: usize, perms: usize);
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: usize) {
-        println!("Alloc range {:#x}..{:#x}, {:#b}", addr + size, size, perms);
+        println!("Alloc range {:#x}..{:#x}, {:#b}", addr, addr + size, perms);
 
         let beg = addr.page_round_down();
         let end = (addr + size).page_round_up();

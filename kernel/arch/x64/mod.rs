@@ -5,7 +5,8 @@
 use core::arch::asm;
 use core::{mem, ptr};
 
-use crate::mm::types::VirtAddr;
+use crate::mm::types::{RootPageDirOps, VirtAddr};
+use crate::process::Process;
 
 #[macro_use]
 pub mod asm;
@@ -28,8 +29,8 @@ pub type LeafDirEntryLarge = mmu::PageDirectoryEntry;
 
 const GDT_KERN_CODE: u16 = 8;
 const GDT_KERN_DATA: u16 = 16;
-const GDT_USER_CODE: u16 = 24;
-const GDT_USER_DATA: u16 = 32;
+const GDT_USER_DATA: u16 = 24;
+const GDT_USER_CODE: u16 = 32;
 const GDT_TSS_LOW: u16 = 40;
 const GDT_TSS_TOP: u16 = 48;
 
@@ -63,13 +64,17 @@ impl TaskStateSegment {
 pub fn init() {
     extern "C" {
         fn int_stack_botmost();
+        fn morestack();
     }
 
     unsafe {
         TSS.ist[0] = int_stack_botmost as usize as u64;
+        TSS.rsp[0] = morestack as usize as u64;
 
         load_tss(&TSS);
     }
+
+    set_star_msr();
 }
 
 fn load_tss(tss: &TaskStateSegment) {
@@ -121,4 +126,50 @@ fn create_tss_descriptors(addr: u64, size: u64) -> (u64, u64) {
     let top = addr_4;
 
     (low, top)
+}
+
+fn set_star_msr() {
+    /*  STAR[47:32] AND 0xFFFC = Kernel code
+     *  STAR[47:32] + 8        = Kernel data
+     *  STAR[63:48] + 16       = User code
+     * (STAR[63:48] + 8) OR 3  = User data
+     */
+
+    let star_msr = 0xc0000081;
+
+    let star_low = GDT_KERN_CODE as u64;
+    let star_top = (GDT_USER_DATA as u64 - 8) | 3;
+
+    assert!(star_low & 0xfffc == GDT_KERN_CODE.into());
+    assert!(star_low + 8 == GDT_KERN_DATA.into());
+
+    assert!((star_top & 0xfffc) + 16 == GDT_USER_CODE.into());
+    assert!((star_top + 8) | 3 == (GDT_USER_DATA | 3).into());
+
+    let star = (star_top << 48) |
+        (star_low << 32);
+
+    asm::wrmsr(star_msr, star);
+}
+
+pub fn switch_to_process(proc: Process) {
+    let rip = proc.registers.return_rip;
+    let flags = proc.registers.rflags;
+    let rsp = proc.registers.return_rsp;
+
+    println!("switch_to_process: rip={:#x}, flags={:#b}, rsp={:#x}", rip, flags, rsp);
+
+    proc.root_dir.switch_to_this();
+
+    unsafe {
+        asm!("mov rcx, {}",
+             "mov r11, {}",
+             "mov rsp, {}",
+             "sysretq",
+             in(reg) rip,
+             in(reg) flags,
+             in(reg) rsp,
+             options(noreturn)
+        );
+    }
 }

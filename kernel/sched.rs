@@ -75,7 +75,8 @@ pub fn next() {
     }
 }
 
-fn run(_proc: Process) {
+fn run(proc: Process) {
+    arch::switch_to_process(proc);
 }
 
 fn idle() {

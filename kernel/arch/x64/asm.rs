@@ -98,3 +98,16 @@ pub fn idle() {
         asm!("hlt");
     }
 }
+
+pub fn wrmsr(num: u32, val: u64) {
+    let low = (val & 0x00000000ffffffff) >> 0;
+    let top = (val & 0xffffffff00000000) >> 32;
+
+    unsafe {
+        asm!("wrmsr",
+            in("edx") top,
+            in("eax") low,
+            in("ecx") num,
+            options(preserves_flags));
+    }
+}
