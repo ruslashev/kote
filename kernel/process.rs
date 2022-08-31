@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
-use crate::{arch, elf, mm};
+use crate::{arch, elf};
 
 #[derive(Copy, Clone)]
 pub struct Process {
@@ -27,14 +27,10 @@ impl Process {
             state: State::Runnable,
         };
 
-        process.root_dir.switch_to_this();
-
         process.registers.set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
         process.registers.enable_interrupts();
 
         elf::load(&mut process, bytes);
-
-        mm::switch_to_kernel_root_dir();
 
         process
     }

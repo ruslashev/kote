@@ -5,6 +5,7 @@
 use core::mem::size_of;
 
 use crate::arch::mmu;
+use crate::mm;
 use crate::mm::types::{Address, RegisterFrameOps, RootPageDirOps, VirtAddr};
 use crate::process::Process;
 
@@ -155,8 +156,12 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
 
     process.root_dir.alloc_range(vaddr, size_in_mem, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
 
+    process.root_dir.switch_to_this();
+
     assert!(file_len <= size_in_mem);
     slice.copy_from_slice(&elf[file_pos..file_pos + file_len]);
+
+    mm::switch_to_kernel_root_dir();
 
     slice[file_len..size_in_mem].fill(0);
 
