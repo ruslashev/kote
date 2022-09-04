@@ -31,14 +31,19 @@ IFLAGS = -follow-links -no-pad
 GRUB_CFG = cfg/grub.cfg
 
 QEMU = qemu-system-x86_64
-QFLAGS = -m 5G -chardev stdio,id=serial0,logfile=qemu.log -serial chardev:serial0
+QFLAGS = -m 5G \
+         -chardev stdio,id=serial0,logfile=qemu.log \
+         -serial chardev:serial0 \
+         -no-reboot \
+         -no-shutdown
 
 ifdef RELEASE
 	CFLAGS += --release
-else
-	QFLAGS += -display none \
-	          -no-reboot \
-	          -no-shutdown
+endif
+
+ifdef EXTRAFLAGS
+	QFLAGS += -display none
+	QFLAGS += -d mmu,cpu_reset
 endif
 
 KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
