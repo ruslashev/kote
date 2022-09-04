@@ -64,12 +64,12 @@ impl TaskStateSegment {
 pub fn init() {
     extern "C" {
         fn int_stack_botmost();
-        fn morestack();
+        fn priv_stack_bot();
     }
 
     unsafe {
         TSS.ist[0] = int_stack_botmost as usize as u64;
-        TSS.rsp[0] = morestack as usize as u64;
+        TSS.rsp[0] = priv_stack_bot as usize as u64;
 
         load_tss(&TSS);
     }

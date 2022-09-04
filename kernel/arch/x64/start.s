@@ -8,7 +8,7 @@ global stack_guard_top
 global stack_guard_bot
 global int_stack_botmost
 global int_stack_guard_bot
-global morestack
+global priv_stack_bot
 global mb_info
 
 extern kmain
@@ -295,8 +295,9 @@ int_stack_topmost:
 int_stack_botmost:
 int_stack_guard_bot:
 	resb 4096
+priv_stack_top:
 	resb KERNEL_INT_STACK_SZ
-morestack:
+priv_stack_bot:
 mb_info:
 	resq 1
 
