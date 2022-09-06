@@ -146,8 +146,7 @@ fn set_star_msr() {
     assert!((star_top & 0xfffc) + 16 == GDT_USER_CODE.into());
     assert!((star_top + 8) | 3 == (GDT_USER_DATA | 3).into());
 
-    let star = (star_top << 48) |
-        (star_low << 32);
+    let star = (star_top << 48) | (star_low << 32);
 
     asm::wrmsr(star_msr, star);
 }
@@ -159,17 +158,25 @@ pub fn switch_to_process(proc: Process) {
 
     println!("switch_to_process: rip={:#x}, flags={:#b}, rsp={:#x}", rip, flags, rsp);
 
+    let cs = GDT_USER_CODE | 3;
+    let ds = GDT_USER_DATA | 3;
+
     proc.root_dir.switch_to_this();
 
     unsafe {
-        asm!("mov rcx, {}",
-             "mov r11, {}",
-             "mov rsp, {}",
-             "sysretq",
-             in(reg) rip,
-             in(reg) flags,
-             in(reg) rsp,
-             options(noreturn)
+        asm!(
+            "mov ds, ax",
+            "push rax",
+            "push {0:r}",
+            "push {1:r}",
+            "push {2:r}",
+            "push {3:r}",
+            "iretq",
+            in(reg) rsp,
+            in(reg) flags,
+            in(reg) cs,
+            in(reg) rip,
+            in("rax") ds,
         );
     }
 }
