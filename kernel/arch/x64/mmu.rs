@@ -108,9 +108,11 @@ trait DirectoryEntry: SetScalar + Into<u64> {
 
     fn create_entry(&mut self) {
         let dir = pg_alloc::alloc_page().inc_refc();
-        let addr = dir.to_physaddr().0 | WRITABLE | PRESENT;
 
-        self.set_scalar(addr);
+        // TODO: improve permissions, especially USER_ACCESSIBLE part
+        let perms = WRITABLE | PRESENT | USER_ACCESSIBLE;
+
+        self.set_scalar(dir.to_physaddr().0 | perms);
     }
 }
 
