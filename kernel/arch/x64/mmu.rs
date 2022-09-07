@@ -12,22 +12,6 @@ use crate::types::{Bytes, KiB, MiB, PowerOfTwoOps};
 pub const PAGE_SIZE: usize = KiB(4).to_bytes();
 pub const PAGE_SIZE_LARGE: usize = MiB(2).to_bytes();
 
-/* Memory layout:
- * ┌───────────────────────────────┐ 0xffffffffffffffff
- * │                               │
- * │                               │
- * │  Identity mapping for kernel  │ 0xffffff8000000000 KERNEL_BASE
- * ├───────────────────────────────┤
- * │                               │
- * │             TODO              │
- *
- * ╵               .               ╵
- * ╵               .               ╵
- *
- * │                               │
- * └───────────────────────────────┘
- */
-
 /// Number of entries in a directory of any level (PML4, PDPT, PD, PT). Equal to 4096 B / 64 b.
 const ENTRIES: usize = 512;
 
@@ -308,16 +292,17 @@ impl RootPageDirOps for PageMapLevel4 {
     }
 
     fn map_page_at_addr(&mut self, page: &mut pg_alloc::PageInfo, addr: VirtAddr, perms: usize) {
-        let pte = self.walk_dir(addr, true).unwrap();
-        page.inc_refc();
-
-        // TODO: this clears just-allocated page
-        if pte.present() {
-            pte.pointed_addr().dec_page_refc();
+        if let Some(pte) = self.walk_dir(addr, false) {
+            pg_alloc::perform_page_op(pte.pointed_addr(), |page| {
+                page.dec_refc();
+            });
             pte.set_scalar(pte.scalar as usize & !PRESENT);
             arch::asm::invalidate_dcache(addr);
         }
 
+        page.inc_refc();
+
+        let pte = self.walk_dir(addr, true).unwrap();
         let addr = page.to_physaddr().0 | perms | PRESENT;
 
         pte.set_scalar(addr);
@@ -325,7 +310,9 @@ impl RootPageDirOps for PageMapLevel4 {
 
     fn unmap_page_at_addr(&mut self, addr: VirtAddr) {
         if let Some(pte) = self.walk_dir(addr, false) {
-            pte.pointed_addr().dec_page_refc();
+            pg_alloc::perform_page_op(pte.pointed_addr(), |page| {
+                page.dec_refc();
+            });
             pte.set_scalar(pte.scalar as usize & !PRESENT);
             arch::asm::invalidate_dcache(addr);
         }

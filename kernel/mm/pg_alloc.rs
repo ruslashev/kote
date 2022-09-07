@@ -73,10 +73,11 @@ impl PageInfo {
     }
 }
 
-pub fn dec_page_refc(addr: PhysAddr) {
+pub fn perform_page_op(addr: PhysAddr, mut op: impl FnMut(&mut PageInfo) -> ()) {
     let idx = addr.0 / mmu::PAGE_SIZE;
-    let mut infos = PAGE_INFOS.lock();
-    infos[idx].dec_refc();
+    let page = &mut PAGE_INFOS.lock()[idx];
+
+    op(page)
 }
 
 pub fn init(area_start: VirtAddr, maxpages: usize, info: &mut BootloaderInfo) {

@@ -90,10 +90,6 @@ impl PhysAddr {
     pub fn into_vaddr(self) -> VirtAddr {
         self.into()
     }
-
-    pub fn dec_page_refc(self) {
-        pg_alloc::dec_page_refc(self);
-    }
 }
 
 impl VirtAddr {
