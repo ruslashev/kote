@@ -46,7 +46,6 @@ pub extern "C" fn kmain() {
     arch::init();
 
     arch::interrupts::init();
-    arch::interrupts::enable();
 
     println!("Available memory:");
     print!("{}", &info.free_areas);
@@ -55,6 +54,8 @@ pub extern "C" fn kmain() {
     print!("{}", info.section_headers.as_ref().unwrap());
 
     sched::init();
+
+    arch::interrupts::enable();
 
     sched::next();
 

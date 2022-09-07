@@ -4,6 +4,7 @@
 
 use super::rtc;
 use crate::arch::asm::io;
+use crate::sched;
 
 const PIC_IRQ_OFFSET: u8 = 32;
 const PIC1: u16 = 0x20;
@@ -91,6 +92,8 @@ fn irq_eoi(irq: u8) {
 pub extern "C" fn irq_dispatch(vec: u8) {
     if vec == 8 {
         rtc::handle_interrupt();
+        irq_eoi(vec);
+        sched::next();
     }
 
     irq_eoi(vec);
