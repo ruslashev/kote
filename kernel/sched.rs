@@ -64,18 +64,13 @@ pub fn init() {
 pub fn next() {
     println!("sched: next");
 
-    let next = {
-        let mut cell = SCHEDULER.lock();
-        let sched = cell.get_mut().unwrap();
+    let mut cell = SCHEDULER.lock();
+    let sched = cell.get_mut().unwrap();
 
-        sched.get_next()
-    };
-
-    match next {
+    match sched.get_next() {
         TaskSwitch::NewTask(new_idx, proc) => {
-            {
-                SCHEDULER.lock().get_mut().unwrap().set_current(new_idx);
-            }
+            sched.set_current(new_idx);
+            drop(cell);
             run(proc);
         }
         TaskSwitch::SameTask(proc) => run(proc),
