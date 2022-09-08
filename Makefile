@@ -6,7 +6,7 @@ ARCH ?= x64
 TRIPLE ?= x86_64-elf-
 TOOLCHAIN = toolchain/bin/$(TRIPLE)
 
-BUILDDIR = build
+BUILDDIR = $(shell pwd)/build
 OBJDIR = $(BUILDDIR)/obj
 ISODIR = $(BUILDDIR)/iso
 RUSTDIR = $(BUILDDIR)/rust
@@ -46,7 +46,7 @@ ifdef EXTRAFLAGS
 	QFLAGS += -d mmu,cpu_reset
 endif
 
-KERNLIB = $(shell pwd)/$(RBUILDDIR)/libkernel.a
+KERNLIB = $(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
 USER_CRATES_DEPS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
 USERSPACE_BUNDLE = $(BUILDDIR)/loop
@@ -92,7 +92,7 @@ $(KERNLIB): $(RUSTDIR) $(USERSPACE_BUNDLE)
 	@$(CARGO) build $(CFLAGS) -p kernel
 
 $(USERSPACE_BUNDLE): $(USER_CRATES_DEPS)
-	@$(LN) $(shell pwd)/$< $@
+	@$(LN) $< $@
 
 $(USER_CRATES_DEPS): $(RUSTDIR)
 	@$(call ECHO, cargo)
@@ -111,6 +111,8 @@ clean:
 -include debug.mk
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
+-include $(USER_CRATES_DEPS:%=%.d)
 
 .PHONY: all iso kernel qemu clippy clean
 .DELETE_ON_ERROR:
+.SUFFIXES:
