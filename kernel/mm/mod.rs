@@ -16,6 +16,7 @@ extern "C" {
     fn stack_guard_top();
     fn stack_guard_bot();
     fn int_stack_guard_bot();
+    fn priv_stack_guard_bot();
 }
 
 static ROOT_KERN_DIR: Mutex<RootPageDir> = Mutex::new(arch::EMPTY_ROOT_DIR);
@@ -45,31 +46,29 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
 
     println_serial!("Mapping stack guards...");
 
-    let top = VirtAddr(stack_guard_top as usize);
-    let bot = VirtAddr(stack_guard_bot as usize);
-    let int = VirtAddr(int_stack_guard_bot as usize);
-    let top_large = top.lpage_round_down();
-    let bot_large = bot.lpage_round_down();
-    let int_large = int.lpage_round_down();
-
-    // Memory on guard pages was covered by a large-page mapping above. Unmap it first.
-    root_dir.unmap_region_large(top_large, 1);
-    root_dir.unmap_region_large(bot_large, 1);
-    root_dir.unmap_region_large(int_large, 1);
-
-    // Recreate the mapping but with lower granularity
-    root_dir.map_region(top_large, PhysAddr(0), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
-    root_dir.map_region(bot_large, PhysAddr(0), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
-    root_dir.map_region(int_large, PhysAddr(0), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
-
-    // Finally, unmap guard pages
-    root_dir.unmap_region(top, 1);
-    root_dir.unmap_region(bot, 1);
-    root_dir.unmap_region(int, 1);
+    unmap_guard_page(root_dir, stack_guard_top as usize, phys_flags);
+    unmap_guard_page(root_dir, stack_guard_bot as usize, phys_flags);
+    unmap_guard_page(root_dir, int_stack_guard_bot as usize, phys_flags);
+    unmap_guard_page(root_dir, priv_stack_guard_bot as usize, phys_flags);
 
     root_dir.switch_to_this();
 
     root_dir
+}
+
+fn unmap_guard_page(mut root_dir: RootPageDir, addr: usize, phys_flags: usize)
+{
+    let vaddr = VirtAddr(addr);
+    let large = vaddr.lpage_round_down();
+
+    // Memory on guard pages is covered by large-page mapping of all phys memory. Unmap it first.
+    root_dir.unmap_region_large(large, 1);
+
+    // Recreate the mapping but with lower granularity
+    root_dir.map_region(large, PhysAddr(0), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
+
+    // Finally, unmap guard page
+    root_dir.unmap_region(vaddr, 1);
 }
 
 pub fn switch_to_kernel_root_dir() {

@@ -9,6 +9,7 @@ global stack_guard_bot
 global int_stack_botmost
 global int_stack_guard_bot
 global priv_stack_bot
+global priv_stack_guard_bot
 global mb_info
 
 extern kmain
@@ -298,6 +299,8 @@ int_stack_guard_bot:
 priv_stack_top:
 	resb KERNEL_INT_STACK_SZ
 priv_stack_bot:
+priv_stack_guard_bot:
+	resb 4096
 mb_info:
 	resq 1
 
