@@ -78,7 +78,7 @@ $(KERNBIN): $(OBJS)
 	@$(call ECHO, ld)
 	@$(LD) $(LFLAGS) $^ -o $@
 
-$(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s $(OBJDIR)
+$(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s | $(OBJDIR)
 	@$(call ECHO, as)
 	@$(AS) $(AFLAGS) $< -o $@
 
@@ -88,14 +88,14 @@ $(KERNISO): $(ISODIR) $(KERNBIN)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
 	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
 
-$(KERNLIB): $(RUSTDIR) $(USERSPACE_BUNDLE)
+$(KERNLIB): $(USERSPACE_BUNDLE) | $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p kernel
 
-$(BUNDLEDIR)/%: $(RBUILDDIR)/% $(BUNDLEDIR)
+$(BUNDLEDIR)/%: $(RBUILDDIR)/% | $(BUNDLEDIR)
 	@$(LN) $< $@
 
-$(USER_CRATES_BINS): $(RUSTDIR)
+$(USER_CRATES_BINS): | $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p $(notdir $@)
 
