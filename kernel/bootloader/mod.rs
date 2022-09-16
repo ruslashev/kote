@@ -72,8 +72,8 @@ impl<'i> SectionInfoIterator<'i> {
             let shdr = info.shdrs.add(idx).read();
             let mut addr = shdr.sh_addr as usize;
             if addr < KERNEL_BASE {
-                addr += KERNEL_BASE
-            };
+                addr += KERNEL_BASE;
+            }
             let size = shdr.sh_size as usize;
             slice::from_raw_parts(addr as *const u8, size)
         };

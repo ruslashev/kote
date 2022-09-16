@@ -56,8 +56,7 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
     root_dir
 }
 
-fn unmap_guard_page(mut root_dir: RootPageDir, addr: usize, phys_flags: usize)
-{
+fn unmap_guard_page(mut root_dir: RootPageDir, addr: usize, phys_flags: usize) {
     let vaddr = VirtAddr(addr);
     let large = vaddr.lpage_round_down();
 
