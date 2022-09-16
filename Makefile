@@ -11,6 +11,7 @@ OBJDIR = $(BUILDDIR)/obj
 ISODIR = $(BUILDDIR)/iso
 RUSTDIR = $(BUILDDIR)/rust
 RBUILDDIR = $(RUSTDIR)/target/*
+BUNDLEDIR = $(BUILDDIR)/bundle
 DISASDIR = $(BUILDDIR)/disas
 
 LN = ln -sf
@@ -48,8 +49,8 @@ endif
 
 KERNLIB = $(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
-USER_CRATES_DEPS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
-USERSPACE_BUNDLE = $(BUILDDIR)/loop
+USER_CRATES_BINS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
+USERSPACE_BUNDLE = $(USER_CRATES_BINS:$(RBUILDDIR)/%=$(BUNDLEDIR)/%)
 
 ASRC = start.s interrupts.s
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
@@ -91,14 +92,14 @@ $(KERNLIB): $(RUSTDIR) $(USERSPACE_BUNDLE)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p kernel
 
-$(USERSPACE_BUNDLE): $(USER_CRATES_DEPS)
+$(BUNDLEDIR)/%: $(RBUILDDIR)/% $(BUNDLEDIR)
 	@$(LN) $< $@
 
-$(USER_CRATES_DEPS): $(RUSTDIR)
+$(USER_CRATES_BINS): $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p $(notdir $@)
 
-$(OBJDIR) $(RUSTDIR) $(DISASDIR):
+$(OBJDIR) $(RUSTDIR) $(DISASDIR) $(BUNDLEDIR):
 	@mkdir -p $@
 
 $(ISODIR):
@@ -111,7 +112,7 @@ clean:
 -include debug.mk
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
--include $(USER_CRATES_DEPS:%=%.d)
+-include $(USER_CRATES_BINS:%=%.d)
 
 .PHONY: all iso kernel qemu clippy clean
 .DELETE_ON_ERROR:

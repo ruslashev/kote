@@ -52,11 +52,13 @@ enum TaskSwitch {
 }
 
 pub fn init() {
-    static LOOP_ELF: &[u8] = include_bytes!("../build/loop");
+    static LOOP_ELF: &[u8] = include_bytes!("../build/bundle/loop");
+    static BKPT_ELF: &[u8] = include_bytes!("../build/bundle/breakpoint");
 
     let mut sched = Scheduler::new();
 
     sched.processes.push_back(Process::from_elf(LOOP_ELF));
+    sched.processes.push_back(Process::from_elf(BKPT_ELF));
 
     assert!(SCHEDULER.lock().set(sched).is_ok());
 }
