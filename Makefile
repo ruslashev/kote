@@ -68,7 +68,7 @@ kernel: $(KERNBIN)
 
 qemu: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
-	@$(QEMU) $(QFLAGS) -cdrom $<
+	@$(QEMU) $(QFLAGS) -cdrom $^
 
 clippy:
 	@$(call ECHO, cargo)
@@ -80,24 +80,24 @@ $(KERNBIN): $(OBJS)
 
 $(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s | $(OBJDIR)
 	@$(call ECHO, as)
-	@$(AS) $(AFLAGS) $< -o $@
+	@$(AS) $(AFLAGS) $^ -o $@
 
-$(KERNISO): $(ISODIR) $(KERNBIN)
+$(KERNISO): $(KERNBIN) | $(ISODIR)
 	@$(call ECHO, iso)
 	@$(LN) $(realpath $(KERNBIN)) $(ISODIR)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
-	@$(ISO) $(IFLAGS) $< -o $@ 2> /dev/null
+	@$(ISO) $(IFLAGS) $(ISODIR) -o $@ 2> /dev/null
 
 $(KERNLIB): $(USERSPACE_BUNDLE) | $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p kernel
 
 $(BUNDLEDIR)/%: $(RBUILDDIR)/% | $(BUNDLEDIR)
-	@$(LN) $< $@
+	@$(LN) $^ $@
 
 $(USER_CRATES_BINS): | $(RUSTDIR)
 	@$(call ECHO, cargo)
-	@$(CARGO) build $(CFLAGS) -p $(notdir $@)
+	@$(CARGO) build $(CFLAGS) -p $(@F)
 
 $(OBJDIR) $(RUSTDIR) $(DISASDIR) $(BUNDLEDIR):
 	@mkdir -p $@
