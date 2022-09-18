@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use crate::bootloader::BootloaderInfo;
 use crate::mm::types::{RegisterFrameOps, RootPageDirOps};
 use crate::{arch, elf};
 
@@ -20,9 +21,9 @@ pub enum State {
 }
 
 impl Process {
-    pub fn from_elf(bytes: &[u8]) -> Self {
+    pub fn from_elf(bytes: &[u8], info: &BootloaderInfo) -> Self {
         let mut process = Process {
-            root_dir: arch::RootPageDir::new_userspace_root_dir(),
+            root_dir: arch::RootPageDir::new_userspace_root_dir(info),
             registers: arch::RegisterFrame::default(),
             state: State::Runnable,
         };
