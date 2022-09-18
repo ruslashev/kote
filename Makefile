@@ -42,11 +42,6 @@ ifdef RELEASE
 	CFLAGS += --release
 endif
 
-ifdef EXTRAFLAGS
-	QFLAGS += -display none
-	QFLAGS += -d mmu,cpu_reset
-endif
-
 KERNLIB = $(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
 USER_CRATES_BINS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
@@ -110,6 +105,7 @@ clean:
 	@rm -rf $(BUILDDIR) $(KERNBIN) $(KERNISO)
 
 -include debug.mk
+-include overrides.mk
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
 -include $(USER_CRATES_BINS:%=%.d)
