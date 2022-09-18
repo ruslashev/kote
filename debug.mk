@@ -13,7 +13,7 @@ QFLAGS_GDB = $(QFLAGS) -S -gdb tcp::$(GDB_PORT)
 GDB = gdb-multiarch
 GDB_OPTS = -ex 'target remote :$(GDB_PORT)'
 
-DISASOBJS = $(notdir $(AOBJ) $(KERNBIN))
+DISASOBJS = $(notdir $(AOBJ) $(KERNBIN) $(USERSPACE_BUNDLE))
 DISAS = $(DISASOBJS:%=$(DISASDIR)/%.txt)
 
 ADDR2LINE = $(TOOLCHAIN)addr2line
@@ -28,14 +28,18 @@ bochs: $(KERNISO)
 gdb: $(KERNISO)
 	@$(call ECHO, qemu, $(<F))
 	@$(QEMU) $(QFLAGS_GDB) -cdrom $< &
-	@$(call ECHO, gdb, $(KERNBIN))
+	@$(call ECHO, gdb, $(notdir $(KERNBIN)))
 	@$(GDB) $(GDB_OPTS) $(KERNBIN)
 
-$(DISASDIR)/%.txt: $(OBJDIR)/% $(DISASDIR)
+$(DISASDIR)/%.txt: $(OBJDIR)/% | $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
-$(DISASDIR)/%.txt: $(BUILDDIR)/% $(DISASDIR)
+$(DISASDIR)/%.txt: $(BUILDDIR)/% | $(DISASDIR)
+	@$(call ECHO, objd)
+	@$(OBJD) $(OFLAGS) $< > $@
+
+$(DISASDIR)/%.txt: $(RBUILDDIR)/% | $(DISASDIR)
 	@$(call ECHO, objd)
 	@$(OBJD) $(OFLAGS) $< > $@
 
