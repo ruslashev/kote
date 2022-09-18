@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::arch::asm;
-use crate::mm;
 
 const PORT_CMND: u16 = 0x70;
 const PORT_DATA: u16 = 0x71;
@@ -46,7 +45,6 @@ fn set_frequency() {
 }
 
 pub(super) fn handle_interrupt() {
-    mm::switch_to_kernel_root_dir();
     println!("tick");
 
     eoi();

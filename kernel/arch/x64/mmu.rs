@@ -189,7 +189,7 @@ impl RootPageDirOps for PageMapLevel4 {
     fn new_userspace_root_dir(info: &BootloaderInfo) -> Self {
         let mut dir = Self::new();
 
-        // TODO: this should be done another way
+        // Number is chosen arbitrarily
         dir.map_region_large(
             VirtAddr(arch::KERNEL_BASE),
             PhysAddr(0),
@@ -201,7 +201,12 @@ impl RootPageDirOps for PageMapLevel4 {
         let fb_addr = PhysAddr::from_u64(fb.addr);
         let fb_size = fb.pitch * fb.height * u32::from(fb.bpp) / 8;
         let pages = fb_size as usize / PAGE_SIZE_LARGE;
-        dir.map_region_large(fb_addr.into_vaddr(), fb_addr, pages, PRESENT | USER_ACCESSIBLE);
+        dir.map_region_large(
+            fb_addr.into_vaddr(),
+            fb_addr,
+            pages,
+            PRESENT | WRITABLE | USER_ACCESSIBLE,
+        );
 
         dir.alloc_range(arch::USER_STACK_START, arch::USER_STACK_SIZE, WRITABLE | USER_ACCESSIBLE);
 
