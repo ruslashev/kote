@@ -8,10 +8,12 @@
 #![allow(clippy::identity_op)]
 #![allow(clippy::inline_always)]
 #![allow(clippy::module_name_repetitions)]
+#![feature(asm_const)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 #![feature(fn_traits)]
 #![feature(int_roundings)]
+#![feature(naked_functions)]
 #![feature(once_cell)]
 
 #[macro_use]

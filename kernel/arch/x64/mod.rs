@@ -152,31 +152,61 @@ fn set_star_msr() {
 }
 
 pub fn switch_to_process(proc: Process) {
-    let rip = proc.registers.rip;
-    let flags = proc.registers.rflags;
-    let rsp = proc.registers.rsp;
-
-    println!("switch_to_process: rip={:#x}, flags={:#b}, rsp={:#x}", rip, flags, rsp);
-
-    let cs = GDT_USER_CODE | 3;
-    let ds = GDT_USER_DATA | 3;
+    interrupts::disable();
 
     proc.root_dir.switch_to_this();
 
     unsafe {
-        asm!(
-            "mov ds, ax",
-            "push rax",
-            "push {0:r}",
-            "push {1:r}",
-            "push {2:r}",
-            "push {3:r}",
-            "iretq",
-            in(reg) rsp,
-            in(reg) flags,
-            in(reg) cs,
-            in(reg) rip,
-            in("rax") ds,
-        );
+        do_switch(&proc.registers);
     }
+}
+
+#[naked]
+unsafe extern "C" fn do_switch(registers: &RegisterFrame) -> ! {
+    asm!(r#"
+        push [rdi + {offset_ss}]
+        push [rdi + {offset_rsp}]
+        push [rdi + {offset_rflags}]
+        push [rdi + {offset_cs}]
+        push [rdi + {offset_rip}]
+        mov r15, [rdi + {offset_r15}]
+        mov r14, [rdi + {offset_r14}]
+        mov r13, [rdi + {offset_r13}]
+        mov r12, [rdi + {offset_r12}]
+        mov r11, [rdi + {offset_r11}]
+        mov r10, [rdi + {offset_r10}]
+        mov r9,  [rdi + {offset_r9}]
+        mov r8,  [rdi + {offset_r8}]
+        mov rbp, [rdi + {offset_rbp}]
+        mov rsi, [rdi + {offset_rsi}]
+        mov rdx, [rdi + {offset_rdx}]
+        mov rcx, [rdi + {offset_rcx}]
+        mov rbx, [rdi + {offset_rbx}]
+        mov rax, [rdi + {offset_rax}]
+        mov rdi, [rdi + {offset_rdi}]
+        iretq
+        "#,
+        // offset_of is still underway
+        offset_r15 = const 0,
+        offset_r14 = const 8,
+        offset_r13 = const 16,
+        offset_r12 = const 24,
+        offset_r11 = const 32,
+        offset_r10 = const 40,
+        offset_r9 = const 48,
+        offset_r8 = const 56,
+        offset_rbp = const 64,
+        offset_rdi = const 72,
+        offset_rsi = const 80,
+        offset_rdx = const 88,
+        offset_rcx = const 96,
+        offset_rbx = const 104,
+        offset_rax = const 112,
+        offset_rip = const 128,
+        offset_cs = const 136,
+        offset_rflags = const 144,
+        offset_rsp = const 152,
+        offset_ss = const 160,
+        options(noreturn)
+    );
 }
