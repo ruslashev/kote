@@ -152,9 +152,9 @@ fn set_star_msr() {
 }
 
 pub fn switch_to_process(proc: Process) {
-    let rip = proc.registers.return_rip;
+    let rip = proc.registers.rip;
     let flags = proc.registers.rflags;
-    let rsp = proc.registers.return_rsp;
+    let rsp = proc.registers.rsp;
 
     println!("switch_to_process: rip={:#x}, flags={:#b}, rsp={:#x}", rip, flags, rsp);
 

@@ -138,24 +138,24 @@ pub struct ExceptionFrame {
     pub rax: u64,
     pub error_code: u32,
     pub exc_vector: u32,
-    pub return_rip: u64,
-    pub return_cs: u64,
+    pub rip: u64,
+    pub cs: u64,
     pub rflags: u64,
-    pub return_rsp: u64,
-    pub return_ss: u64,
+    pub rsp: u64,
+    pub ss: u64,
 }
 
 impl fmt::Display for ExceptionFrame {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Copies to avoid references to packed fields
-        let rip = self.return_rip;
+        let rip = self.rip;
         let rdi = self.rdi;
         let rsi = self.rsi;
         let rdx = self.rdx;
         let rcx = self.rcx;
         let r8 = self.r8;
         let r9 = self.r9;
-        let rsp = self.return_rsp;
+        let rsp = self.rsp;
         let rbp = self.rbp;
 
         writeln!(f, "RIP 0x{:<16x} RSP 0x{:<16x} RBP 0x{:<16x}", rip, rsp, rbp)?;
@@ -191,11 +191,11 @@ impl fmt::Display for ExceptionFrame {
 
 impl crate::mm::types::RegisterFrameOps for ExceptionFrame {
     fn set_program_counter(&mut self, addr: usize) {
-        self.return_rip = addr as u64;
+        self.rip = addr as u64;
     }
 
     fn set_stack_pointer(&mut self, addr: usize) {
-        self.return_rsp = addr as u64;
+        self.rsp = addr as u64;
     }
 
     fn enable_interrupts(&mut self) {
