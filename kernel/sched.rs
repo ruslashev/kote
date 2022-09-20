@@ -43,6 +43,8 @@ impl Scheduler {
         }
 
         self.processes.set_current(new_idx);
+
+        self.processes.current().unwrap().state = State::Running;
     }
 }
 
@@ -58,8 +60,9 @@ pub fn init(info: &BootloaderInfo) {
 
     let mut sched = Scheduler::new();
 
-    sched.processes.push_back(Process::from_elf(LOOP_ELF, info));
-    sched.processes.push_back(Process::from_elf(BKPT_ELF, info));
+    sched.processes.push_back(Process::from_elf("loop", LOOP_ELF, info));
+    sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
+    sched.processes.push_back(Process::from_elf("breakpoint", BKPT_ELF, info));
 
     assert!(SCHEDULER.lock().set(sched).is_ok());
 }
@@ -72,11 +75,15 @@ pub fn next() {
 
     match sched.get_next() {
         TaskSwitch::NewTask(new_idx, proc) => {
+            println!("switching to new task '{}'", proc.name);
             sched.set_current(new_idx);
             drop(cell);
             run(proc);
         }
-        TaskSwitch::SameTask(proc) => run(proc),
+        TaskSwitch::SameTask(proc) => {
+            println!("switching to same task '{}'", proc.name);
+            run(proc);
+        }
         TaskSwitch::Idle => idle(),
     }
 }

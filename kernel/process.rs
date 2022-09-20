@@ -11,6 +11,7 @@ pub struct Process {
     pub root_dir: arch::RootPageDir,
     pub registers: arch::RegisterFrame,
     pub state: State,
+    pub name: &'static str,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -21,11 +22,12 @@ pub enum State {
 }
 
 impl Process {
-    pub fn from_elf(bytes: &[u8], info: &BootloaderInfo) -> Self {
+    pub fn from_elf(name: &'static str, bytes: &[u8], info: &BootloaderInfo) -> Self {
         let mut process = Process {
             root_dir: arch::RootPageDir::new_userspace(info),
             registers: arch::RegisterFrame::new_userspace(),
             state: State::Runnable,
+            name,
         };
 
         elf::load(&mut process, bytes);
