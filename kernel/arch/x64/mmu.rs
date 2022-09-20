@@ -186,7 +186,7 @@ impl RootPageDirOps for PageMapLevel4 {
         PageMapLevel4 { addr: phys }
     }
 
-    fn new_userspace_root_dir(info: &BootloaderInfo) -> Self {
+    fn new_userspace(info: &BootloaderInfo) -> Self {
         let mut dir = Self::new();
 
         // Number is chosen arbitrarily

@@ -6,6 +6,7 @@ use core::fmt;
 
 use super::handlers;
 use crate::arch::backtrace::Backtrace;
+use crate::{arch, mm};
 
 static EXCEPTION_HANDLERS: [Exception; 32] = [
     Exception::with_hdl("Divide-by-zero Error", handlers::divide_by_zero), // 0
@@ -189,18 +190,23 @@ impl fmt::Display for ExceptionFrame {
     }
 }
 
-impl crate::mm::types::RegisterFrameOps for ExceptionFrame {
+impl mm::types::RegisterFrameOps for ExceptionFrame {
+    fn new_userspace() -> Self {
+        let stack_top = arch::USER_STACK_START.0 + arch::USER_STACK_SIZE - 16;
+        let intr_flag = 1 << 9;
+
+        Self {
+            rsp: stack_top as u64,
+            rflags: intr_flag,
+            cs: (arch::GDT_USER_CODE | 3).into(),
+            ss: (arch::GDT_USER_DATA | 3).into(),
+
+            ..Default::default()
+        }
+    }
+
     fn set_program_counter(&mut self, addr: usize) {
         self.rip = addr as u64;
-    }
-
-    fn set_stack_pointer(&mut self, addr: usize) {
-        self.rsp = addr as u64;
-    }
-
-    fn enable_interrupts(&mut self) {
-        let intr_flag = 1 << 9;
-        self.rflags |= intr_flag;
     }
 }
 

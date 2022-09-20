@@ -23,13 +23,10 @@ pub enum State {
 impl Process {
     pub fn from_elf(bytes: &[u8], info: &BootloaderInfo) -> Self {
         let mut process = Process {
-            root_dir: arch::RootPageDir::new_userspace_root_dir(info),
-            registers: arch::RegisterFrame::default(),
+            root_dir: arch::RootPageDir::new_userspace(info),
+            registers: arch::RegisterFrame::new_userspace(),
             state: State::Runnable,
         };
-
-        process.registers.set_stack_pointer(arch::USER_STACK_START.0 + arch::USER_STACK_SIZE);
-        process.registers.enable_interrupts();
 
         elf::load(&mut process, bytes);
 

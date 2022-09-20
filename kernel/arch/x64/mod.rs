@@ -27,12 +27,12 @@ pub type RootPageDir = mmu::PageMapLevel4;
 pub type LeafDirEntry = mmu::PageTableEntry;
 pub type LeafDirEntryLarge = mmu::PageDirectoryEntry;
 
-const GDT_KERN_CODE: u16 = 8;
-const GDT_KERN_DATA: u16 = 16;
-const GDT_USER_DATA: u16 = 24;
-const GDT_USER_CODE: u16 = 32;
-const GDT_TSS_LOW: u16 = 40;
-const GDT_TSS_TOP: u16 = 48;
+pub(self) const GDT_KERN_CODE: u16 = 8;
+pub(self) const GDT_KERN_DATA: u16 = 16;
+pub(self) const GDT_USER_DATA: u16 = 24;
+pub(self) const GDT_USER_CODE: u16 = 32;
+pub(self) const GDT_TSS_LOW: u16 = 40;
+pub(self) const GDT_TSS_TOP: u16 = 48;
 
 static mut TSS: TaskStateSegment = TaskStateSegment::new();
 

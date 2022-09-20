@@ -100,14 +100,13 @@ impl VirtAddr {
 }
 
 pub trait RegisterFrameOps: fmt::Display {
+    fn new_userspace() -> Self;
     fn set_program_counter(&mut self, addr: usize);
-    fn set_stack_pointer(&mut self, addr: usize);
-    fn enable_interrupts(&mut self);
 }
 
 pub trait RootPageDirOps {
     fn new() -> Self;
-    fn new_userspace_root_dir(info: &BootloaderInfo) -> Self;
+    fn new_userspace(info: &BootloaderInfo) -> Self;
     fn switch_to_this(&self);
     fn walk_dir(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntry>;
     fn walk_dir_large(&mut self, addr: VirtAddr, create: bool) -> Option<&mut LeafDirEntryLarge>;
