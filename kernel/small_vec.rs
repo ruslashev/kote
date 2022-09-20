@@ -9,6 +9,7 @@ use crate::mm::pg_alloc;
 
 pub struct SmallVec<T> {
     buf: *mut T,
+    len: usize,
     cap: usize,
     head: usize,
     tail: usize,
@@ -25,6 +26,9 @@ impl<T> SmallVec<T> {
     }
 
     pub fn from_slice<U>(slice: &mut [U]) -> Self {
+        assert!(mem::size_of::<T>() != 0);
+        assert!(mem::size_of::<U>() != 0);
+
         let ptr = slice.as_mut_ptr();
         let offset = ptr.align_offset(mem::align_of::<T>());
 
@@ -34,7 +38,8 @@ impl<T> SmallVec<T> {
 
         Self {
             buf: aligned.cast::<T>(),
-            cap: (slice.len() - offset) / mem::size_of::<T>(),
+            len: 0,
+            cap: (slice.len() * mem::size_of::<U>() - offset) / mem::size_of::<T>(),
             head: 0,
             tail: 0,
             view: 0,
@@ -42,11 +47,13 @@ impl<T> SmallVec<T> {
     }
 
     pub fn push_back(&mut self, item: T) {
-        assert!((self.tail + 1) % self.cap != self.head, "small_vec: overflow");
+        assert!(self.len < self.cap, "small_vec: overflow");
 
         unsafe {
             self.buf.add(self.tail).write(item);
         }
+
+        self.len += 1;
 
         self.tail += 1;
         self.tail %= self.cap;
@@ -84,15 +91,9 @@ impl<T> SmallVec<T> {
     }
 
     pub fn iter_round_robin(&self) -> RoundRobinIterator<T> {
-        let len = if self.head < self.tail {
-            self.tail - self.head
-        } else {
-            self.tail + self.cap - self.head
-        };
-
         RoundRobinIterator {
             idx: self.view,
-            len,
+            len: self.len,
             vec: self,
         }
     }
@@ -131,5 +132,113 @@ impl<'a, T> Iterator for RoundRobinIterator<'a, T> {
 
             Some((idx, elem))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::small_vec::SmallVec;
+
+    #[test]
+    fn simple() {
+        let mut storage = [0u8; 128];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+        vec.push_back(4);
+        vec.push_back(5);
+
+        let mut it = vec.iter_round_robin();
+
+        assert_eq!(it.next(), Some((0, &1)));
+        assert_eq!(it.next(), Some((1, &2)));
+        assert_eq!(it.next(), Some((2, &3)));
+        assert_eq!(it.next(), Some((3, &4)));
+        assert_eq!(it.next(), Some((4, &5)));
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn full() {
+        let mut storage = [0u64; 3];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+    }
+
+    #[test]
+    #[should_panic(expected = "small_vec: overflow")]
+    fn overflow() {
+        let mut storage = [0u8; 30];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+        vec.push_back(4);
+    }
+
+    #[test]
+    fn one_element() {
+        let mut storage = [0u64; 1];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(0u64);
+    }
+
+    #[test]
+    #[should_panic(expected = "small_vec: overflow")]
+    fn one_element_overflow() {
+        let mut storage = [0u64; 1];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(0u64);
+        vec.push_back(1u64);
+    }
+
+    #[test]
+    #[should_panic]
+    fn empty_push() {
+        let mut storage = [0u8; 0];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(0u64);
+    }
+
+    #[test]
+    fn empty_current() {
+        let mut storage = [0u64; 4];
+        let vec: SmallVec<u64> = SmallVec::from_slice(&mut storage);
+
+        assert_eq!(vec.current(), None);
+    }
+
+    #[test]
+    fn current() {
+        let mut storage = [0u8; 128];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(0u64);
+        vec.push_back(10);
+        vec.push_back(20);
+        vec.push_back(30);
+        vec.push_back(40);
+
+        vec.set_current(2);
+
+        assert_eq!(vec.current(), Some(&mut 20));
+
+        let mut it = vec.iter_round_robin();
+
+        assert_eq!(it.next(), Some((2, &20)));
+        assert_eq!(it.next(), Some((3, &30)));
+        assert_eq!(it.next(), Some((4, &40)));
+        assert_eq!(it.next(), Some((0, &0)));
+        assert_eq!(it.next(), Some((1, &10)));
+        assert_eq!(it.next(), None);
     }
 }
