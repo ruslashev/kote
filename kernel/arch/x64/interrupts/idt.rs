@@ -72,7 +72,7 @@ fn build() {
         IDT[0] = create_idt_entry(handle_exception_0, true, true);
         IDT[1] = create_idt_entry(handle_exception_1, true, true);
         IDT[2] = create_idt_entry(handle_exception_2, true, true);
-        IDT[3] = create_idt_entry(handle_exception_3, true, true);
+        IDT[3] = create_idt_entry(handle_exception_3, false, true);
         IDT[4] = create_idt_entry(handle_exception_4, true, true);
         IDT[5] = create_idt_entry(handle_exception_5, true, true);
         IDT[6] = create_idt_entry(handle_exception_6, true, true);

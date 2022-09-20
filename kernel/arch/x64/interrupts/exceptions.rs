@@ -11,7 +11,7 @@ static EXCEPTION_HANDLERS: [Exception; 32] = [
     Exception::with_hdl("Divide-by-zero Error", handlers::divide_by_zero), // 0
     Exception::stub_hdl("Debug"),                                          // 1
     Exception::stub_hdl("Non-maskable Interrupt"),                         // 2
-    Exception::stub_hdl("Breakpoint"),                                     // 3
+    Exception::with_hdl("Breakpoint", handlers::breakpoint),               // 3
     Exception::stub_hdl("Overflow"),                                       // 4
     Exception::stub_hdl("Bound Range Exceeded"),                           // 5
     Exception::stub_hdl("Invalid Opcode"),                                 // 6

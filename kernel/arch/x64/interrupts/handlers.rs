@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use super::exceptions::ExceptionFrame;
+use crate::sched;
 use crate::types::PowerOfTwoOps;
 
 extern "C" {
@@ -12,6 +13,12 @@ extern "C" {
 
 pub(super) fn divide_by_zero(_frame: &ExceptionFrame) {
     println!("Divide by zero handler");
+}
+
+pub(super) fn breakpoint(_frame: &ExceptionFrame) {
+    // Usually this would be the place to enter a debugger, but the breakpoint exception is only
+    // used to test interrupts in userspace.
+    sched::next();
 }
 
 pub(super) fn page_fault(_frame: &ExceptionFrame) {
