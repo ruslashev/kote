@@ -77,7 +77,7 @@ impl<T> SmallVec<T> {
     }
 
     pub fn current(&self) -> Option<&mut T> {
-        if self.head == self.tail {
+        if self.len == 0 {
             None
         } else {
             unsafe { self.buf.add(self.view).as_mut() }
@@ -85,15 +85,19 @@ impl<T> SmallVec<T> {
     }
 
     pub fn set_current(&mut self, new_view: usize) {
-        assert!(new_view >= self.head && new_view < self.tail);
+        assert!(new_view >= self.head);
+        assert!(new_view < self.tail || (self.tail == self.head && new_view < self.len));
 
         self.view = new_view;
     }
 
     pub fn iter_round_robin(&self) -> RoundRobinIterator<T> {
+        let end = if self.head == self.tail { self.len } else { self.tail };
+
         RoundRobinIterator {
             idx: self.view,
-            len: self.len,
+            cnt: 0,
+            end,
             vec: self,
         }
     }
@@ -109,7 +113,8 @@ impl<T> Drop for SmallVec<T> {
 
 pub struct RoundRobinIterator<'a, T> {
     idx: usize,
-    len: usize,
+    cnt: usize,
+    end: usize,
     vec: &'a SmallVec<T>,
 }
 
@@ -117,16 +122,16 @@ impl<'a, T> Iterator for RoundRobinIterator<'a, T> {
     type Item = (usize, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.len == 0 {
+        if self.cnt == self.vec.len {
             None
         } else {
             let idx = self.idx;
             let elem = unsafe { self.vec.buf.add(idx).as_ref().unwrap() };
 
-            self.len -= 1;
-
+            self.cnt += 1;
             self.idx += 1;
-            if self.idx == self.vec.tail {
+
+            if self.idx == self.end {
                 self.idx = self.vec.head;
             }
 
@@ -171,6 +176,54 @@ mod tests {
     }
 
     #[test]
+    fn full_iterate() {
+        let mut storage = [0u64; 3];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+
+        let mut it = vec.iter_round_robin();
+
+        assert_eq!(it.next(), Some((0, &1)));
+        assert_eq!(it.next(), Some((1, &2)));
+        assert_eq!(it.next(), Some((2, &3)));
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn full_unset_current() {
+        let mut storage = [0u64; 3];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+
+        assert_eq!(vec.current(), Some(&mut 1));
+    }
+
+    #[test]
+    fn full_current() {
+        let mut storage = [0u64; 3];
+        let mut vec = SmallVec::from_slice(&mut storage);
+
+        vec.push_back(1u64);
+        vec.push_back(2);
+        vec.push_back(3);
+
+        vec.set_current(1);
+
+        let mut it = vec.iter_round_robin();
+
+        assert_eq!(it.next(), Some((1, &2)));
+        assert_eq!(it.next(), Some((2, &3)));
+        assert_eq!(it.next(), Some((0, &1)));
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
     #[should_panic(expected = "small_vec: overflow")]
     fn overflow() {
         let mut storage = [0u8; 30];
@@ -197,7 +250,7 @@ mod tests {
         let mut vec = SmallVec::from_slice(&mut storage);
 
         vec.push_back(0u64);
-        vec.push_back(1u64);
+        vec.push_back(1);
     }
 
     #[test]
