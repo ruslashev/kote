@@ -168,7 +168,13 @@ impl MemoryMap {
 
         self.cleanup_empty_ranges();
 
-        self.sort_ranges();
+        self.entries[0..self.num_entries].sort_unstable_by(|a, b| {
+            if a.start != b.start {
+                a.start.cmp(&b.start)
+            } else {
+                a.end.cmp(&b.end)
+            }
+        });
     }
 
     pub fn remove_range(&mut self, start: PhysAddr, size: usize) {
@@ -249,23 +255,6 @@ impl MemoryMap {
                 }
                 self.num_entries -= 1;
             }
-        }
-    }
-
-    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
-    fn sort_ranges(&mut self) {
-        let entries = &mut self.entries;
-
-        for i in 1..self.num_entries {
-            let key = entries[i];
-            let mut j = i as isize - 1;
-
-            while j >= 0 && entries[j as usize].start > key.start {
-                entries[j as usize + 1] = entries[j as usize];
-                j -= 1;
-            }
-
-            entries[(j + 1) as usize] = key;
         }
     }
 }
