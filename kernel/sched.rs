@@ -68,20 +68,18 @@ pub fn init(info: &BootloaderInfo) {
 }
 
 pub fn next() {
-    println!("sched: next");
-
     let mut cell = SCHEDULER.lock();
     let sched = cell.get_mut().unwrap();
 
     match sched.get_next() {
         TaskSwitch::NewTask(new_idx, proc) => {
-            println!("switching to new task '{}'", proc.name);
+            trace!("switching to new task '{}'", proc.name);
             sched.set_current(new_idx);
             drop(cell);
             run(proc);
         }
         TaskSwitch::SameTask(proc) => {
-            println!("switching to same task '{}'", proc.name);
+            trace!("switching to same task '{}'", proc.name);
             run(proc);
         }
         TaskSwitch::Idle => idle(),

@@ -2,11 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Usage of `match expr { x => { … } }` in these macros is intentional because it affects the
-// lifetimes of temporaries. For example, we can't create a `let args = format_args!($($arg)*)`
-// binding. Its usage here is similar to an absent `let x = expr in { … }` construct.
-// See https://stackoverflow.com/a/48732525/1063961
-
 use core::fmt;
 use core::fmt::Write;
 
@@ -78,21 +73,24 @@ fn write(output: &mut impl Write, args: &fmt::Arguments, newline: bool) {
     }
 }
 
-// Copied from std
 #[macro_export]
-macro_rules! dbg {
+macro_rules! trace {
     () => {
-        $crate::println!("[{}:{}]", file!(), line!())
+        $crate::println!("{}:{}", module_leaf!(), line!())
     };
-    ($val:expr $(,)?) => {
-        match $val {
-            tmp => {
-                $crate::println!("[{}:{}] {} = {:#?}", file!(), line!(), stringify!($val), &tmp);
-                tmp
-            }
-        }
+    ($e:expr) => {
+        $crate::println!("{}: {}", module_leaf!(), &$e)
     };
-    ($($val:expr),+ $(,)?) => {
-        ($($crate::dbg!($val)),+,)
+    ($e:ident) => {
+        $crate::println!("{}: {} = {:#?}", module_leaf!(), stringify!($e), &$e)
+    };
+    ($($args:tt)*) => {
+        $crate::println!("{}: {}", module_leaf!(), &format_args!($($args)*))
+    }
+}
+
+macro_rules! module_leaf {
+    () => {
+        module_path!().split("::").last().unwrap()
     };
 }
