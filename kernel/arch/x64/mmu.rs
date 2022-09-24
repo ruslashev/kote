@@ -20,6 +20,7 @@ pub const PRESENT: usize = 1 << 0;
 pub const WRITABLE: usize = 1 << 1;
 pub const USER_ACCESSIBLE: usize = 1 << 2;
 pub const LARGE: usize = 1 << 7;
+pub const NON_EXECUTABLE: usize = 1 << 63;
 
 #[derive(Clone, Copy)]
 pub struct PageMapLevel4 {

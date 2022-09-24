@@ -165,11 +165,17 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
 
     slice[file_len..size_in_mem].fill(0);
 
-    if p_flags & PF_W == 0 {
-        process.root_dir.change_range_perms(
-            vaddr,
-            size_in_mem,
-            mmu::USER_ACCESSIBLE | mmu::PRESENT,
-        );
+    let mut perms = mmu::PRESENT | mmu::USER_ACCESSIBLE;
+
+    if p_flags & PF_W != 0 {
+        perms |= mmu::WRITABLE;
+
+        assert!(p_flags & PF_X == 0, "elf: writable and executable regions not allowed");
     }
+
+    if p_flags & PF_X == 0 {
+        perms |= mmu::NON_EXECUTABLE;
+    }
+
+    process.root_dir.change_range_perms(vaddr, size_in_mem, perms);
 }
