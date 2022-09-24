@@ -10,7 +10,6 @@ const PORT_DATA: u16 = 0x71;
 const REG_A: u8 = 0xa;
 const REG_B: u8 = 0xb;
 const REG_C: u8 = 0xc;
-const REG_D: u8 = 0xd;
 
 const INTERRUPT_ENABLE: u8 = 1 << 6;
 

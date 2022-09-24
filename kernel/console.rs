@@ -124,15 +124,6 @@ impl Framebuffer {
         }
     }
 
-    fn draw_pixel(&self, x: u32, y: u32, color: u32) {
-        let pos = y * self.pitch + x * self.bytes_per_pixel as u32;
-        let ptr = (self.addr.0 + pos as usize) as *mut u32;
-
-        unsafe {
-            ptr.write(color);
-        }
-    }
-
     fn draw_char(&self, b: u8, font: &Font, x: u32, y: u32) {
         let offset = font.height * b as usize;
         let glyph = &font.glyphs[offset..offset + font.height];
