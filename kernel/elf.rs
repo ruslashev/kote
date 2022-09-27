@@ -62,7 +62,15 @@ pub struct Elf64Shdr {
     pub sh_entsize: Elf64Xword,
 }
 
+const EI_CLASS: usize = 4;
+const EI_DATA: usize = 5;
+const EI_OSABI: usize = 7;
 const EI_NIDENT: usize = 16;
+
+const ELFCLASS64: u8 = 2;
+const ELFDATA2LSB: u8 = 1;
+const ELFOSABI_SYSV: u8 = 0;
+
 const ET_EXEC: Elf64Half = 2;
 const EM_X86_64: Elf64Half = 62;
 const EV_CURRENT: Elf64Word = 1;
@@ -80,6 +88,14 @@ macro_rules! read_int {
     }};
 }
 
+macro_rules! read_bytes {
+    ($num:expr, $in:expr) => {{
+        let (bytes, rest) = $in.split_at($num);
+        $in = rest;
+        bytes
+    }};
+}
+
 macro_rules! read_last {
     ($ty:ident, $in:expr) => {{
         let ret = read_int!($ty, $in);
@@ -89,7 +105,7 @@ macro_rules! read_last {
 }
 
 macro_rules! check_field {
-    ($var:ident, $expected:expr) => {{
+    ($var:expr, $expected:expr) => {{
         assert!(
             $var == $expected,
             "bad {} ({}), expected {} ({})",
@@ -105,7 +121,13 @@ pub fn load(process: &mut Process, elf: &[u8]) {
     assert!(elf.len() > size_of::<Elf64Ehdr>(), "bad header length");
     assert!(&elf[0..4] == b"\x7fELF", "bad magic");
 
-    let mut input = &elf[EI_NIDENT..];
+    let mut input = elf;
+
+    let e_ident = read_bytes!(EI_NIDENT, input);
+
+    check_field!(e_ident[EI_CLASS], ELFCLASS64);
+    check_field!(e_ident[EI_DATA], ELFDATA2LSB);
+    check_field!(e_ident[EI_OSABI], ELFOSABI_SYSV);
 
     let e_type = read_int!(Elf64Half, input);
     let e_machine = read_int!(Elf64Half, input);
