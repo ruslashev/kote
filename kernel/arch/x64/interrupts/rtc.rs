@@ -44,7 +44,7 @@ fn set_frequency() {
 }
 
 pub(super) fn handle_interrupt() {
-    println!("tick");
+    trace!("tick");
 
     eoi();
 }

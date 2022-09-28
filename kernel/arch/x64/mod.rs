@@ -129,13 +129,13 @@ fn create_tss_descriptors(addr: u64, size: u64) -> (u64, u64) {
 }
 
 fn set_star_msr() {
-    /*  STAR[47:32] AND 0xFFFC = Kernel code
+    /*  STAR[47:32] AND 0xfffc = Kernel code
      *  STAR[47:32] + 8        = Kernel data
      *  STAR[63:48] + 16       = User code
      * (STAR[63:48] + 8) OR 3  = User data
      */
 
-    let star_msr = 0xc0000081;
+    let star_msr = 0xc000_0081;
 
     let star_low = GDT_KERN_CODE as u64;
     let star_top = (GDT_USER_DATA as u64 - 8) | 3;
@@ -156,20 +156,19 @@ pub fn switch_to_process(proc: Process) {
 
     proc.root_dir.switch_to_this();
 
-    unsafe {
-        do_switch(&proc.registers);
-    }
+    do_switch(&proc.registers);
 }
 
 #[naked]
-unsafe extern "C" fn do_switch(registers: &RegisterFrame) -> ! {
-    asm!(r#"
-        push [rdi + {offset_ss}]
-        push [rdi + {offset_rsp}]
+extern "C" fn do_switch(registers: &RegisterFrame) -> ! {
+    unsafe {
+        asm!(r#"
+        push [rdi + {offset_ss}]      // prepare data to be restored by iret
+        push [rdi + {offset_rsp}]     // aka Long-Mode stack after interrupt
         push [rdi + {offset_rflags}]
         push [rdi + {offset_cs}]
         push [rdi + {offset_rip}]
-        mov r15, [rdi + {offset_r15}]
+        mov r15, [rdi + {offset_r15}] // restore rest of the registers
         mov r14, [rdi + {offset_r14}]
         mov r13, [rdi + {offset_r13}]
         mov r12, [rdi + {offset_r12}]
@@ -208,5 +207,6 @@ unsafe extern "C" fn do_switch(registers: &RegisterFrame) -> ! {
         offset_rsp = const 152,
         offset_ss = const 160,
         options(noreturn)
-    );
+        );
+    }
 }
