@@ -211,9 +211,7 @@ impl mm::types::RegisterFrameOps for ExceptionFrame {
 }
 
 #[no_mangle]
-pub extern "C" fn exception_dispatch(rsp: u64) {
-    let frame_ptr = rsp as *const ExceptionFrame;
-    let frame = unsafe { &*frame_ptr };
+pub extern "C" fn exception_dispatch(frame: &ExceptionFrame) {
     let vec = frame.exc_vector;
     let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
 

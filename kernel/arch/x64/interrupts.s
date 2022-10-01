@@ -47,7 +47,6 @@ section .text
 %macro define_exception_handler_pushes_err 1
 global handle_exception_%1
 handle_exception_%1:
-	cli
 	mov dword [rsp + 4], %1
 	jmp exception_handler_common
 %endmacro
@@ -55,7 +54,6 @@ handle_exception_%1:
 %macro define_exception_handler 1
 global handle_exception_%1
 handle_exception_%1:
-	cli
 	push 0
 	mov dword [rsp + 4], %1
 	jmp exception_handler_common
@@ -67,7 +65,6 @@ exception_handler_common:
 	call exception_dispatch
 	pop_regs
 	add rsp, 8
-	sti
 	iretq
 
 define_exception_handler 0
@@ -106,7 +103,6 @@ define_exception_handler 31
 %macro define_irq_handler 1
 global handle_irq_%1
 handle_irq_%1:
-	cli
 	mov dil, %1
 	jmp irq_handler_common
 %endmacro
@@ -115,7 +111,6 @@ irq_handler_common:
 	push_regs
 	call irq_dispatch
 	pop_regs
-	sti
 	iretq
 
 define_irq_handler 0
