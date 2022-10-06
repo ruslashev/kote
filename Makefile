@@ -47,7 +47,7 @@ USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
 USER_CRATES_BINS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
 USERSPACE_BUNDLE = $(USER_CRATES_BINS:$(RBUILDDIR)/%=$(BUNDLEDIR)/%)
 
-ASRC = start.s interrupts.s
+ASRC = start.s interrupts.s syscall.s
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
 OBJS = $(AOBJ) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin

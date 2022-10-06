@@ -17,6 +17,7 @@ extern "C" {
     fn stack_guard_bot();
     fn int_stack_guard_bot();
     fn priv_stack_guard_bot();
+    fn sysc_stack_guard_bot();
 }
 
 static ROOT_KERN_DIR: Mutex<RootPageDir> = Mutex::new(arch::EMPTY_ROOT_DIR);
@@ -50,6 +51,7 @@ fn create_kern_root_dir(maxpages: usize) -> RootPageDir {
     unmap_guard_page(root_dir, stack_guard_bot as usize, phys_flags);
     unmap_guard_page(root_dir, int_stack_guard_bot as usize, phys_flags);
     unmap_guard_page(root_dir, priv_stack_guard_bot as usize, phys_flags);
+    unmap_guard_page(root_dir, sysc_stack_guard_bot as usize, phys_flags);
 
     root_dir.switch_to_this();
 

@@ -33,6 +33,7 @@ mod sched;
 mod serial;
 mod small_vec;
 mod spinlock;
+mod syscalls;
 mod types;
 
 #[no_mangle]

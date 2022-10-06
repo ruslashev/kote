@@ -74,7 +74,7 @@ pub fn init() {
         load_tss(&TSS);
     }
 
-    set_star_msr();
+    set_syscall_msrs();
 }
 
 fn load_tss(tss: &TaskStateSegment) {
@@ -128,7 +128,7 @@ fn create_tss_descriptors(addr: u64, size: u64) -> (u64, u64) {
     (low, top)
 }
 
-fn set_star_msr() {
+fn set_syscall_msrs() {
     /*  STAR[47:32] AND 0xfffc = Kernel code
      *  STAR[47:32] + 8        = Kernel data
      *  STAR[63:48] + 16       = User code
@@ -149,6 +149,18 @@ fn set_star_msr() {
     let star = (star_top << 48) | (star_low << 32);
 
     asm::wrmsr(star_msr, star);
+
+    let lstar_msr = 0xc000_0082;
+
+    extern "C" {
+        fn syscall_handler();
+    }
+    asm::wrmsr(lstar_msr, syscall_handler as usize as u64);
+
+    let sfmask_msr = 0xc000_0084;
+    let intr_flag = 1 << 9;
+
+    asm::wrmsr(sfmask_msr, intr_flag);
 }
 
 pub fn switch_to_process(proc: Process) {
