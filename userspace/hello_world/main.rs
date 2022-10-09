@@ -34,6 +34,8 @@ fn syscall(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64) -> u64 {
 pub extern "C" fn _start() {
     loop {
         syscall(1, STR.as_ptr() as u64, STR.len() as u64, 0, 0);
+        let _bad = syscall(1, 0xffffff8000000000, 800000, 0, 0);
+        syscall(0, 0, 0, 0, 0);
     }
 }
 

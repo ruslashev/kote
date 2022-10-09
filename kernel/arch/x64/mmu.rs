@@ -417,4 +417,17 @@ impl RootPageDirOps for PageMapLevel4 {
             }
         }
     }
+
+    fn is_region_user_accessible(&mut self, from: VirtAddr, to: VirtAddr) -> bool {
+        for page in (from.page_round_down().0..to.page_round_up().0).step_by(PAGE_SIZE) {
+            let vaddr = VirtAddr(page);
+            if let Some(pte) = self.walk_dir(vaddr, false) {
+                if pte.scalar as usize & USER_ACCESSIBLE == 0 {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
 }

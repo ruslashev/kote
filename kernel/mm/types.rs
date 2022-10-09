@@ -117,6 +117,7 @@ pub trait RootPageDirOps {
     fn unmap_region(&mut self, from: VirtAddr, pages: usize);
     fn unmap_region_large(&mut self, from: VirtAddr, lpages: usize);
     fn change_range_perms(&mut self, from: VirtAddr, size: usize, perms: usize);
+    fn is_region_user_accessible(&mut self, from: VirtAddr, to: VirtAddr) -> bool;
 
     fn alloc_range(&mut self, addr: VirtAddr, size: usize, perms: usize) {
         println!("Alloc range {:#x}..{:#x}, {:#b}", addr, addr + size, perms);

@@ -99,3 +99,11 @@ fn idle() -> ! {
         arch::asm::idle();
     }
 }
+
+// TODO: this should probably return `&mut Process` instead of `Option<Process>`
+pub fn current() -> Option<Process> {
+    let cell = SCHEDULER.lock();
+    let sched = cell.get().unwrap();
+
+    sched.processes.current().copied()
+}
