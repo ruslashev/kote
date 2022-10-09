@@ -163,7 +163,7 @@ fn set_syscall_msrs() {
     asm::wrmsr(sfmask_msr, intr_flag);
 }
 
-pub fn switch_to_process(proc: Process) {
+pub fn switch_to_process(proc: Process) -> ! {
     interrupts::disable();
 
     proc.root_dir.switch_to_this();

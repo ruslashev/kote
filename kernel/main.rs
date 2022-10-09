@@ -61,6 +61,4 @@ pub extern "C" fn kmain() {
     arch::interrupts::enable();
 
     sched::next();
-
-    println!("Kernel exit");
 }

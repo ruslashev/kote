@@ -69,7 +69,7 @@ pub fn init(info: &BootloaderInfo) {
     assert!(SCHEDULER.lock().set(sched).is_ok());
 }
 
-pub fn next() {
+pub fn next() -> ! {
     let mut cell = SCHEDULER.lock();
     let sched = cell.get_mut().unwrap();
 
@@ -88,11 +88,11 @@ pub fn next() {
     }
 }
 
-fn run(proc: Process) {
+fn run(proc: Process) -> ! {
     arch::switch_to_process(proc);
 }
 
-fn idle() {
+fn idle() -> ! {
     arch::interrupts::enable();
 
     loop {
