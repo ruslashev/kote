@@ -2,9 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::convert::Infallible;
+use core::ops::{ControlFlow, FromResidual, Try};
 use core::{fmt, slice, str};
 
-use crate::mm::types::{RootPageDirOps, VirtAddr, Address};
+use crate::mm::types::{Address, RootPageDirOps, VirtAddr};
 use crate::sched;
 
 const SYSC_YIELD: u64 = 0;
@@ -32,6 +34,64 @@ impl fmt::Display for SyscallArgs {
         let arg4 = self.arg4;
 
         write!(f, "num={} args: {:x} {:x} {:x} {:x}", num, arg1, arg2, arg3, arg4)
+    }
+}
+
+#[must_use]
+enum NumericResult<T> {
+    Ok(T),
+    Err(u64),
+}
+
+trait ConvertToNumericResult<T> {
+    fn convert_err(self, err: u64) -> NumericResult<T>;
+}
+
+impl<T, E> ConvertToNumericResult<T> for Result<T, E> {
+    fn convert_err(self, err: u64) -> NumericResult<T> {
+        match self {
+            Ok(t) => NumericResult::Ok(t),
+            Err(_) => NumericResult::Err(err),
+        }
+    }
+}
+
+impl<T> Try for NumericResult<T> {
+    type Output = T;
+    type Residual = NumericResult<Infallible>;
+
+    #[inline]
+    fn from_output(output: Self::Output) -> Self {
+        NumericResult::Ok(output)
+    }
+
+    #[inline]
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
+        match self {
+            NumericResult::Ok(t) => ControlFlow::Continue(t),
+            NumericResult::Err(num) => ControlFlow::Break(NumericResult::Err(num)),
+        }
+    }
+}
+
+impl<T> FromResidual for NumericResult<T> {
+    #[inline]
+    fn from_residual(residual: NumericResult<Infallible>) -> Self {
+        match residual {
+            // This match arm shouldn't be needed, but rustc complains without it
+            NumericResult::Ok(_) => unreachable!(),
+            NumericResult::Err(num) => NumericResult::Err(num),
+        }
+    }
+}
+
+impl FromResidual<NumericResult<Infallible>> for u64 {
+    #[inline]
+    fn from_residual(residual: NumericResult<Infallible>) -> Self {
+        match residual {
+            NumericResult::Ok(_) => unreachable!(),
+            NumericResult::Err(num) => num,
+        }
     }
 }
 
@@ -63,10 +123,7 @@ fn write(args: &SyscallArgs) -> u64 {
 
     unsafe {
         let slice = slice::from_raw_parts(ptr, size);
-        let string = match str::from_utf8(slice) {
-            Ok(string) => string,
-            _ => return SYSR_ERR_BAD_ARGS,
-        };
+        let string = str::from_utf8(slice).convert_err(SYSR_ERR_BAD_ARGS)?;
 
         println!("{}", string);
     }

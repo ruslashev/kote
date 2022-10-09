@@ -15,6 +15,7 @@
 #![feature(int_roundings)]
 #![feature(naked_functions)]
 #![feature(once_cell)]
+#![feature(try_trait_v2)]
 
 #[macro_use]
 mod printk;
