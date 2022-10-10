@@ -44,23 +44,31 @@ macro_rules! print_serial {
     }
 }
 
+#[macro_export]
+macro_rules! println_serial_force {
+    ($($arg:tt)*) => {
+        $crate::printk::do_print(&format_args!($($arg)*), true, true, true)
+    }
+}
+
 pub fn do_print(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bool) {
     interrupts::with_disabled(|| {
-        if no_cons {
-            let mut serial = SERIAL_LOCK.lock();
-            write(&mut *serial, args, newline);
+        let mut serial = if force {
+            SERIAL_LOCK.force_unlock()
         } else {
-            let (mut serial, mut cons_cell) = if force {
-                (SERIAL_LOCK.force_unlock(), CONSOLE.force_unlock())
-            } else {
-                (SERIAL_LOCK.lock(), CONSOLE.lock())
-            };
+            SERIAL_LOCK.lock()
+        };
 
-            write(&mut *serial, args, newline);
+        write(&mut *serial, args, newline);
 
-            if let Some(console) = cons_cell.get_mut() {
-                write(console, args, newline);
-            }
+        if no_cons {
+            return;
+        }
+
+        let mut cons_cell = if force { CONSOLE.force_unlock() } else { CONSOLE.lock() };
+
+        if let Some(console) = cons_cell.get_mut() {
+            write(console, args, newline);
         }
     });
 }
