@@ -7,7 +7,7 @@ use core::fmt::Write;
 
 use crate::arch::interrupts;
 use crate::console::CONSOLE;
-use crate::serial::SERIAL_LOCK;
+use crate::serial::SERIAL;
 
 #[macro_export]
 macro_rules! println {
@@ -53,11 +53,7 @@ macro_rules! println_serial_force {
 
 pub fn do_print(args: &fmt::Arguments, newline: bool, force: bool, no_cons: bool) {
     interrupts::with_disabled(|| {
-        let mut serial = if force {
-            SERIAL_LOCK.force_unlock()
-        } else {
-            SERIAL_LOCK.lock()
-        };
+        let mut serial = if force { SERIAL.force_unlock() } else { SERIAL.lock() };
 
         write(&mut *serial, args, newline);
 

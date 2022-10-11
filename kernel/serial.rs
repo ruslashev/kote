@@ -7,7 +7,7 @@ use crate::spinlock::Mutex;
 
 type SerialImpl = uart::Uart;
 
-pub static SERIAL_LOCK: Mutex<SerialImpl> = Mutex::new(SerialImpl {});
+pub static SERIAL: Mutex<SerialImpl> = Mutex::new(SerialImpl {});
 
 pub trait Serial {
     fn init();

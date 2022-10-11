@@ -7,7 +7,7 @@ use core::panic::PanicInfo;
 
 use crate::arch::backtrace::Backtrace;
 use crate::arch::interrupts;
-use crate::serial::SERIAL_LOCK;
+use crate::serial::SERIAL;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -33,7 +33,7 @@ pub fn panic_no_serial(_message: &str) {
 pub fn panic_no_graphics(message: &str) -> ! {
     interrupts::disable();
 
-    let mut serial = SERIAL_LOCK.force_unlock();
+    let mut serial = SERIAL.force_unlock();
     writeln!(&mut serial, "{}", message).unwrap();
 
     loop {}
