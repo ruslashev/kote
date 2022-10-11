@@ -15,6 +15,7 @@
 #![feature(int_roundings)]
 #![feature(naked_functions)]
 #![feature(once_cell)]
+#![feature(panic_info_message)]
 #![feature(try_trait_v2)]
 
 #[macro_use]

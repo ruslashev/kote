@@ -13,7 +13,17 @@ use crate::serial::SERIAL;
 fn panic(info: &PanicInfo) -> ! {
     interrupts::disable();
 
-    println_force!("{}", info);
+    print_force!("Kernel panic");
+
+    if let Some(msg) = info.message() {
+        print_force!(": {}", msg);
+    }
+
+    if let Some(loc) = info.location() {
+        print_force!(" at {}", loc);
+    }
+
+    println_force!("");
 
     println_force!("Backtrace:");
     for (i, addr) in Backtrace::from_here().enumerate() {

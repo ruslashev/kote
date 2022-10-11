@@ -31,6 +31,13 @@ macro_rules! println_force {
 }
 
 #[macro_export]
+macro_rules! print_force {
+    ($($arg:tt)*) => {
+        $crate::printk::do_print(&format_args!($($arg)*), false, true, false)
+    }
+}
+
+#[macro_export]
 macro_rules! println_serial {
     ($($arg:tt)*) => {
         $crate::printk::do_print(&format_args!($($arg)*), true, false, true)
