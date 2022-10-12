@@ -3,14 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 [package]
-name = "hello_world"
+name = "ulib"
 version = "0.0.0"
 edition = "2021"
 license = "MPL-2.0"
 
-[[bin]]
-name = "hello_world"
-path = "main.rs"
-
-[dependencies]
-ulib = { path = "../ulib" }
+[lib]
+name = "ulib"
+path = "lib.rs"
