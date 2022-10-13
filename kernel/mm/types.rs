@@ -87,6 +87,12 @@ impl From<PhysAddr> for VirtAddr {
     }
 }
 
+impl From<VirtAddr> for PhysAddr {
+    fn from(vaddr: VirtAddr) -> Self {
+        PhysAddr(vaddr.0 - arch::KERNEL_BASE as usize)
+    }
+}
+
 impl PhysAddr {
     pub fn into_vaddr(self) -> VirtAddr {
         self.into()

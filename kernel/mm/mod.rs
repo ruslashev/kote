@@ -66,7 +66,7 @@ fn unmap_guard_page(mut root_dir: RootPageDir, addr: usize, phys_flags: usize) {
     root_dir.unmap_region_large(large, 1);
 
     // Recreate the mapping but with lower granularity
-    root_dir.map_region(large, PhysAddr(0), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
+    root_dir.map_region(large, large.into(), mmu::PAGE_SIZE_LARGE / mmu::PAGE_SIZE, phys_flags);
 
     // Finally, unmap guard page
     root_dir.unmap_region(vaddr, 1);
