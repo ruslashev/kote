@@ -3,8 +3,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #![no_std]
+#![feature(format_args_nl)]
 
 use core::arch::asm;
+
+#[macro_use]
+pub mod print;
 
 extern "Rust" {
     fn main();
@@ -46,6 +50,8 @@ pub fn sched_yield() {
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!("{}", info);
+
     loop {}
 }

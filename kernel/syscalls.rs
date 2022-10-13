@@ -125,7 +125,7 @@ fn write(args: &SyscallArgs) -> u64 {
         let slice = slice::from_raw_parts(ptr, size);
         let string = str::from_utf8(slice).convert_err(SYSR_ERR_BAD_ARGS)?;
 
-        println!("{}", string);
+        print!("{}", string);
     }
 
     SYSR_OK

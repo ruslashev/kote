@@ -4,13 +4,14 @@
 
 #![no_std]
 #![no_main]
+#![feature(format_args_nl)]
 
-static STR: &str = "Hello, World!";
+use ulib::println;
 
 #[no_mangle]
 fn main() {
     loop {
-        ulib::write(STR);
+        println!("Hello, World!");
         ulib::sched_yield();
     }
 }
