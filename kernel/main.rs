@@ -12,6 +12,7 @@
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 #![feature(fn_traits)]
+#![feature(format_args_nl)]
 #![feature(int_roundings)]
 #![feature(naked_functions)]
 #![feature(once_cell)]
