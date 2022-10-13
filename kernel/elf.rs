@@ -8,6 +8,7 @@ use crate::arch::mmu;
 use crate::mm;
 use crate::mm::types::{Address, RegisterFrameOps, RootPageDirOps, VirtAddr};
 use crate::process::Process;
+use crate::types::PowerOfTwoOps;
 
 type Elf64Addr = u64;
 type Elf64Off = u64;
@@ -171,22 +172,34 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
     }
 
     let vaddr = VirtAddr::from_u64(p_vaddr);
+    let aligned = vaddr.page_round_down();
+    let offset = vaddr.0 - aligned.0;
+
     let size_in_mem = p_memsz as usize;
-    let slice = unsafe { vaddr.into_slice_mut(size_in_mem) };
+    let full_size = size_in_mem + offset;
+
+    let slice = unsafe { aligned.into_slice_mut(full_size) };
+
     let file_pos = p_offset as usize;
     let file_len = p_filesz as usize;
 
-    process.root_dir.alloc_range(vaddr, size_in_mem, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
+    process.root_dir.alloc_range(aligned, full_size, mmu::USER_ACCESSIBLE | mmu::WRITABLE);
 
     process.root_dir.switch_to_this();
 
-    assert!(file_len <= size_in_mem);
-    slice.copy_from_slice(&elf[file_pos..file_pos + file_len]);
+    slice.fill(0);
+
+    // TODO: handle p_memsz != p_filesz
+    let virt = &mut slice[offset..offset + size_in_mem];
+    let file = &elf[file_pos..file_pos + file_len];
+    virt.copy_from_slice(file);
 
     mm::switch_to_kernel_root_dir();
 
-    slice[file_len..size_in_mem].fill(0);
+    process.root_dir.change_range_perms(aligned, full_size, flags_to_permissions(p_flags));
+}
 
+fn flags_to_permissions(p_flags: Elf64Word) -> usize {
     let mut perms = mmu::PRESENT | mmu::USER_ACCESSIBLE;
 
     if p_flags & PF_W != 0 {
@@ -199,5 +212,5 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
         perms |= mmu::NON_EXECUTABLE;
     }
 
-    process.root_dir.change_range_perms(vaddr, size_in_mem, perms);
+    perms
 }
