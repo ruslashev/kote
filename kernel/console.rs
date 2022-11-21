@@ -11,7 +11,7 @@ use crate::spinlock::Mutex;
 
 pub static CONSOLE: Mutex<OnceCell<Console>> = Mutex::new(OnceCell::new());
 
-const FONT: &[u8] = include_bytes!("../Lat7-Fixed14.psf");
+const FONT: &[u8] = include_bytes!("../font.psf");
 const FB_LUT: [[u32; 8]; 2usize.pow(8)] = compute_fb_lut();
 const COLOR_BG: u32 = 0x000000;
 const COLOR_FG: u32 = 0xe5e5e5;
