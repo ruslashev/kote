@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use core::cell::OnceCell;
+use core::fmt;
 
 use crate::bootloader::BootloaderInfo;
 use crate::mm::types::{Address, PhysAddr, VirtAddr};
@@ -16,6 +17,8 @@ const FB_LUT: [[u32; 8]; 2usize.pow(8)] = compute_fb_lut();
 const COLOR_BG: u32 = 0x000000;
 const COLOR_FG: u32 = 0xe5e5e5;
 
+const PSF1_MAGIC: [u8; 2] = [0x36, 0x04];
+
 #[derive(Debug)]
 pub struct Console {
     fb: Framebuffer,
@@ -24,6 +27,21 @@ pub struct Console {
     cursor_y: u32,
     width: u32,
     height: u32,
+}
+
+#[derive(Debug)]
+struct Framebuffer {
+    addr: VirtAddr,
+    height: u32,
+    pitch: u32,
+    bytes_per_pixel: u8,
+}
+
+#[derive(Debug)]
+struct Font {
+    width: u32,
+    height: usize,
+    glyphs: &'static [u8],
 }
 
 impl Console {
@@ -95,21 +113,13 @@ impl Console {
     }
 }
 
-impl core::fmt::Write for Console {
+impl fmt::Write for Console {
     // NOTE: Same as `Serial`, by itself makes no exclusivity guarantees
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_str(s);
 
         Ok(())
     }
-}
-
-#[derive(Debug)]
-struct Framebuffer {
-    addr: VirtAddr,
-    height: u32,
-    pitch: u32,
-    bytes_per_pixel: u8,
 }
 
 impl Framebuffer {
@@ -143,17 +153,10 @@ impl Framebuffer {
     }
 }
 
-#[derive(Debug)]
-struct Font {
-    width: u32,
-    height: usize,
-    glyphs: &'static [u8],
-}
-
 impl Font {
     fn from_bytes(bytes: &'static [u8]) -> Self {
-        if bytes[0..=1] != [0x36, 0x04] {
-            panic_no_graphics("Font magic mismatch");
+        if bytes[0..=1] != PSF1_MAGIC {
+            panic_no_graphics("Font magic mismatch: only PSF version 1 is supported");
         }
 
         Font {
