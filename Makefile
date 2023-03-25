@@ -29,6 +29,7 @@ LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
 
 ISO = grub-mkrescue
 IFLAGS = -follow-links -no-pad
+
 GRUB_CFG = cfg/grub.cfg
 
 QEMU = qemu-system-x86_64
@@ -39,7 +40,7 @@ QFLAGS = -m 5G \
          -no-shutdown
 
 ifdef RELEASE
-	CFLAGS += --release
+    CFLAGS += --release
 endif
 
 KERNLIB = $(RBUILDDIR)/libkernel.a
@@ -111,5 +112,6 @@ clean:
 -include $(USER_CRATES_BINS:%=%.d)
 
 .PHONY: all iso kernel qemu clippy clean
+.NOTPARALLEL:
 .DELETE_ON_ERROR:
 .SUFFIXES:
