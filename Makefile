@@ -3,8 +3,29 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 ARCH ?= x64
-TRIPLE ?= x86_64-elf-
-TOOLCHAIN = toolchain/bin/$(TRIPLE)
+
+ifeq ($(ARCH), x64)
+    TRIPLE = x86_64-elf
+
+    AS = nasm
+    AFLAGS = -f elf64
+
+    ASRC = start.s interrupts.s syscall.s
+
+    QEMU = qemu-system-x86_64
+    QFLAGS = -m 5G
+else ifeq ($(ARCH), aarch64)
+    TRIPLE = aarch64-elf
+
+    QEMU = qemu-system-aarch64
+    QFLAGS = -m 1G \
+             -machine virt \
+             -cpu cortex-a57
+else
+    $(error Unknown architecture "$(ARCH)")
+endif
+
+TOOLCHAIN = toolchain/bin/$(TRIPLE)-
 
 BUILDDIR = $(shell pwd)/build
 OBJDIR = $(BUILDDIR)/obj
@@ -15,9 +36,6 @@ BUNDLEDIR = $(BUILDDIR)/bundle
 DISASDIR = $(BUILDDIR)/disas
 
 LN = ln -sf
-
-AS = nasm
-AFLAGS = -f elf64
 
 CARGO = cargo
 CFLAGS = --target kernel/arch/$(ARCH)/target.json
@@ -32,12 +50,10 @@ IFLAGS = -follow-links -no-pad
 
 GRUB_CFG = cfg/grub.cfg
 
-QEMU = qemu-system-x86_64
-QFLAGS = -m 5G \
-         -chardev stdio,id=serial0,logfile=qemu.log \
-         -serial chardev:serial0 \
-         -no-reboot \
-         -no-shutdown
+QFLAGS += -chardev stdio,id=serial0,logfile=qemu.log \
+          -serial chardev:serial0 \
+          -no-reboot \
+          -no-shutdown
 
 ifdef RELEASE
     CFLAGS += --release
@@ -48,7 +64,6 @@ USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
 USER_CRATES_BINS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
 USERSPACE_BUNDLE = $(USER_CRATES_BINS:$(RBUILDDIR)/%=$(BUNDLEDIR)/%)
 
-ASRC = start.s interrupts.s syscall.s
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
 OBJS = $(AOBJ) $(KERNLIB)
 KERNBIN = $(BUILDDIR)/kernel.bin
