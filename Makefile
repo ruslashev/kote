@@ -31,14 +31,14 @@ BUILDDIR = $(shell pwd)/build
 OBJDIR = $(BUILDDIR)/obj
 ISODIR = $(BUILDDIR)/iso
 RUSTDIR = $(BUILDDIR)/rust
-RBUILDDIR = $(RUSTDIR)/target/*
+RBUILDDIR = $(RUSTDIR)/*-kernel/*
 BUNDLEDIR = $(BUILDDIR)/bundle
 DISASDIR = $(BUILDDIR)/disas
 
 LN = ln -sf
 
 CARGO = cargo
-CFLAGS = --target kernel/arch/$(ARCH)/target.json
+CFLAGS = --target kernel/arch/$(ARCH)/$(ARCH)-kernel.json
 
 LD = $(TOOLCHAIN)ld
 LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
