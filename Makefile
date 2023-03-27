@@ -25,7 +25,7 @@ else
     $(error Unknown architecture "$(ARCH)")
 endif
 
-TOOLCHAIN = toolchain/bin/$(TRIPLE)-
+TOOLCHAIN = toolchain/$(ARCH)/bin/$(TRIPLE)-
 
 BUILDDIR = $(shell pwd)/build
 OBJDIR = $(BUILDDIR)/obj

@@ -4,7 +4,6 @@
 
 [build]
 target-dir = "build/rust"
-target = "kernel/arch/x64/target.json"
 
 [unstable]
 build-std-features = ["compiler-builtins-mem"]
@@ -12,6 +11,12 @@ build-std = ["core", "compiler_builtins"]
 
 [term]
 progress.when = 'never'
+
+[target.aarch64-kernel]
+rustflags = [ "-C", "linker=toolchain/aarch64/bin/aarch64-elf-ld" ]
+
+[target.x64-kernel]
+rustflags = [ "-C", "linker=toolchain/x64/bin/x86_64-elf-ld" ]
 
 [target.'cfg(debug_assertions)']
 rustflags = ["-C", "force-frame-pointers=y"]
