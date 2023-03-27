@@ -12,6 +12,10 @@ use core::arch::asm;
 pub extern "C" fn _start() {
     loop {
         unsafe {
+            #[cfg(target_arch = "aarch64")]
+            asm!("brk 0");
+
+            #[cfg(target_arch = "x86_64")]
             asm!("int3");
         }
     }

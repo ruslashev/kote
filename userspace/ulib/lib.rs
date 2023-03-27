@@ -5,6 +5,7 @@
 #![no_std]
 #![feature(format_args_nl)]
 
+#[cfg(target_arch = "x86_64")]
 use core::arch::asm;
 
 #[macro_use]
@@ -21,6 +22,12 @@ pub extern "C" fn _start(_argc: usize, _argv: usize) {
     }
 }
 
+#[cfg(target_arch = "aarch64")]
+fn syscall(_num: u64, _arg1: u64, _arg2: u64, _arg3: u64, _arg4: u64) -> u64 {
+    0
+}
+
+#[cfg(target_arch = "x86_64")]
 fn syscall(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64) -> u64 {
     let ret;
 
