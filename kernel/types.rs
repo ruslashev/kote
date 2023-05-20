@@ -117,6 +117,7 @@ impl PowerOfTwoOps for $type {
 
 impl_po2_ops_for_newtypes!(VirtAddr PhysAddr);
 
+#[const_trait]
 pub trait Bytes: Sized {
     fn to_bytes(self) -> usize;
 }

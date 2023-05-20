@@ -14,8 +14,8 @@
 #![feature(fn_traits)]
 #![feature(format_args_nl)]
 #![feature(int_roundings)]
+#![feature(let_chains)]
 #![feature(naked_functions)]
-#![feature(once_cell)]
 #![feature(panic_info_message)]
 #![feature(try_trait_v2)]
 
