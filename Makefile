@@ -67,8 +67,9 @@ endif
 
 KERNLIB = $(RBUILDDIR)/libkernel.a
 USERSPACE_CRATES = $(notdir $(wildcard userspace/*))
-USER_CRATES_BINS = $(USERSPACE_CRATES:%=$(RBUILDDIR)/%)
-USERSPACE_BUNDLE = $(USER_CRATES_BINS:$(RBUILDDIR)/%=$(BUNDLEDIR)/%)
+USER_CRATES_BINS = $(filter-out ulib, $(USERSPACE_CRATES))
+USER_BINS_TARGET = $(USER_CRATES_BINS:%=$(RBUILDDIR)/%)
+USERSPACE_BUNDLE = $(USER_BINS_TARGET:$(RBUILDDIR)/%=$(BUNDLEDIR)/%)
 
 AOBJ = $(ASRC:%.s=$(OBJDIR)/%.o)
 OBJS = $(AOBJ) $(KERNLIB)
@@ -112,7 +113,7 @@ $(KERNLIB): $(USERSPACE_BUNDLE) | $(RUSTDIR)
 $(BUNDLEDIR)/%: $(RBUILDDIR)/% | $(BUNDLEDIR)
 	@$(LN) $^ $@
 
-$(USER_CRATES_BINS): | $(RUSTDIR)
+$(USER_BINS_TARGET): | $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO) build $(CFLAGS) -p $(@F)
 
@@ -130,9 +131,11 @@ clean:
 -include overrides.mk
 -include toolchain.mk
 -include $(RBUILDDIR)/libkernel.d
--include $(USER_CRATES_BINS:%=%.d)
+-include $(USER_BINS_TARGET:%=%.d)
 
 .PHONY: all iso kernel qemu clippy clean
 .NOTPARALLEL:
 .DELETE_ON_ERROR:
 .SUFFIXES:
+MAKEFLAGS += --no-builtin-rules \
+             --no-builtin-variables
