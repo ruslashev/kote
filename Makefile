@@ -2,9 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-ARCH ?= x64
+CFG_ARCH ?= x64
 
-ifeq ($(ARCH), x64)
+ifeq ($(CFG_ARCH), x64)
     TRIPLE = x86_64-elf
 
     AS = nasm
@@ -14,7 +14,7 @@ ifeq ($(ARCH), x64)
 
     QEMU = qemu-system-x86_64
     QFLAGS = -m 5G
-else ifeq ($(ARCH), aarch64)
+else ifeq ($(CFG_ARCH), aarch64)
     TRIPLE = aarch64-elf
 
     QEMU = qemu-system-aarch64
@@ -22,10 +22,10 @@ else ifeq ($(ARCH), aarch64)
              -machine virt \
              -cpu cortex-a57
 else
-    $(error Unknown architecture "$(ARCH)")
+    $(error Unknown architecture "$(CFG_ARCH)")
 endif
 
-TOOLCHAIN = toolchain/$(ARCH)/bin/$(TRIPLE)-
+TOOLCHAIN = toolchain/$(CFG_ARCH)/bin/$(TRIPLE)-
 
 BUILDDIR = $(shell pwd)/build
 OBJDIR = $(BUILDDIR)/obj
@@ -38,10 +38,10 @@ DISASDIR = $(BUILDDIR)/disas
 LN = ln -sf
 
 CARGO = cargo
-CFLAGS = --target kernel/arch/$(ARCH)/$(ARCH)-kernel.json
+CFLAGS = --target kernel/arch/$(CFG_ARCH)/$(CFG_ARCH)-kernel.json
 
 LD = $(TOOLCHAIN)ld
-LFLAGS = -T kernel/arch/$(ARCH)/link.ld \
+LFLAGS = -T kernel/arch/$(CFG_ARCH)/link.ld \
          -z max-page-size=0x1000 \
          --gc-sections
 
@@ -89,7 +89,7 @@ $(KERNBIN): $(OBJS)
 	@$(call ECHO, ld)
 	@$(LD) $(LFLAGS) $^ -o $@
 
-$(OBJDIR)/%.o: kernel/arch/$(ARCH)/%.s | $(OBJDIR)
+$(OBJDIR)/%.o: kernel/arch/$(CFG_ARCH)/%.s | $(OBJDIR)
 	@$(call ECHO, as)
 	@$(AS) $(AFLAGS) $^ -o $@
 

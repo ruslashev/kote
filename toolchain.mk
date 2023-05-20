@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 BINUTILS_VER = binutils-2.40
-INSTALL = $(shell pwd)/toolchain/$(ARCH)
+INSTALL = $(shell pwd)/toolchain/$(CFG_ARCH)
 MFLAGS = -j $(shell nproc)
 
 toolchain:
