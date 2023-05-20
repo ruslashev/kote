@@ -15,3 +15,5 @@ bx_enh_dbg.ini
 
 overrides.mk
 
+config
+config.mk

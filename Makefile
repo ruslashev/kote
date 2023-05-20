@@ -2,7 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-CFG_ARCH ?= x64
+MAKE_CFG := $(shell ./config.rs --make > config.mk)
+CARGO_CFG := $(shell ./config.rs --cargo)
+include config.mk
 
 ifeq ($(CFG_ARCH), x64)
     TRIPLE = x86_64-elf
@@ -55,6 +57,10 @@ QFLAGS += -chardev stdio,id=serial0,logfile=qemu.log \
           -no-reboot \
           -no-shutdown
 
+ifeq ($(CFG_GRAPHIC), false)
+    QFLAGS += -display none
+endif
+
 ifdef RELEASE
     CFLAGS += --release
 endif
@@ -101,7 +107,7 @@ $(KERNISO): $(KERNBIN) | $(ISODIR)
 
 $(KERNLIB): $(USERSPACE_BUNDLE) | $(RUSTDIR)
 	@$(call ECHO, cargo)
-	@$(CARGO) build $(CFLAGS) -p kernel
+	@$(CARGO_CFG) $(CARGO) build $(CFLAGS) -p kernel
 
 $(BUNDLEDIR)/%: $(RBUILDDIR)/% | $(BUNDLEDIR)
 	@$(LN) $^ $@
