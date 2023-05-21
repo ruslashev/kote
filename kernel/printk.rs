@@ -79,16 +79,24 @@ pub fn do_print(args: &fmt::Arguments, force: bool, no_cons: bool) {
 #[macro_export]
 macro_rules! trace {
     () => {
-        $crate::println!("{}:{}", module_leaf!(), line!())
+        if cfg!(trace) {
+            $crate::println!("{}:{}", module_leaf!(), line!())
+        }
     };
     ($e:expr) => {
-        $crate::println!("{}: {}", module_leaf!(), &$e)
+        if cfg!(trace) {
+            $crate::println!("{}: {}", module_leaf!(), &$e)
+        }
     };
     ($e:ident) => {
-        $crate::println!("{}: {} = {:#?}", module_leaf!(), stringify!($e), &$e)
+        if cfg!(trace) {
+            $crate::println!("{}: {} = {:#?}", module_leaf!(), stringify!($e), &$e)
+        }
     };
     ($($args:tt)*) => {
-        $crate::println!("{}: {}", module_leaf!(), &format_args!($($args)*))
+        if cfg!(trace) {
+            $crate::println!("{}: {}", module_leaf!(), &format_args!($($args)*))
+        }
     }
 }
 

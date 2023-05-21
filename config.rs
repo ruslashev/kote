@@ -4,6 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#![feature(iter_intersperse)]
 #![allow(non_camel_case_types)]
 
 macro_rules! options {
@@ -41,6 +42,9 @@ options! {
 
     /// Enable serial input/output
     serial: bool = true,
+
+    /// Enable output of trace!() macro
+    trace: bool = false,
 }
 
 #[allow(unused)]
@@ -73,25 +77,22 @@ fn output_makefile() {
 }
 
 fn output_cargo_args() {
-    let mut flags = String::new();
-    let mut it = OPTIONS.iter().peekable();
+    let mut flags = vec![];
 
-    while let Some((key, val)) = it.next() {
+    for (key, val) in OPTIONS {
         match *val {
             "false" => continue,
             "true" => {
-                flags += &format!("--cfg={}", key);
+                flags.push(format!("--cfg={}", key));
             }
             _ => {
                 let leaf = val.split("::").last().unwrap();
-                flags += &format!("--cfg={}_{}", key, leaf);
+                flags.push(format!("--cfg={}_{}", key, leaf));
             }
-        }
-
-        if it.peek().is_some() {
-            flags += "\x1f";
         }
     }
 
-    print!("CARGO_ENCODED_RUSTFLAGS='{}'", flags);
+    let output = flags.into_iter().intersperse("\x1f".to_owned()).collect::<String>();
+
+    print!("CARGO_ENCODED_RUSTFLAGS='{}'", output);
 }
