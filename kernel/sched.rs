@@ -82,9 +82,13 @@ pub fn next() -> ! {
         }
         TaskSwitch::SameTask(proc) => {
             trace!("switching to same task '{}'", proc.name);
+            drop(cell);
             run(proc);
         }
-        TaskSwitch::Idle => idle(),
+        TaskSwitch::Idle => {
+            trace!("idle");
+            idle();
+        }
     }
 }
 
