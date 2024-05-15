@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-BINUTILS_VER = binutils-2.40
+BINUTILS_VER = binutils-2.42
 INSTALL = $(shell pwd)/toolchain/$(CFG_ARCH)
 MFLAGS = -j $(shell nproc)
 
@@ -17,16 +17,16 @@ toolchain:
 		&& tar xJf temp/download/$(BINUTILS_VER).tar.xz -C temp/extract
 	@cd temp/build \
 		&& echo configure… \
-		&& ../extract/$(BINUTILS_VER)/configure \
-			--target=$(TRIPLE) \
-			--prefix=$(INSTALL) \
-			--disable-nls \
-			--with-sysroot \
-			> ../logs/configure.log 2>&1 \
+			&& ../extract/$(BINUTILS_VER)/configure \
+				--target=$(TRIPLE) \
+				--prefix=$(INSTALL) \
+				--disable-nls \
+				--with-sysroot \
+				> ../logs/configure.log 2>&1 \
 		&& echo make… \
-		&& make $(MFLAGS) > ../logs/build.log 2>&1 \
+			&& make $(MFLAGS) > ../logs/build.log 2>&1 \
 		&& echo make install… \
-		&& make install > ../logs/install.log 2>&1
+			&& make install > ../logs/install.log 2>&1
 	@rm -rf temp
 	@echo done
 
