@@ -5,7 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #![feature(iter_intersperse)]
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types, unused)]
 
 macro_rules! options {
     (
@@ -14,7 +14,6 @@ macro_rules! options {
             $id:ident: $t:ty = $v:expr,
         )+
     ) => {
-        #[allow(unused)]
         struct Options {
             $(
                 $( #[$doc] )*
@@ -22,7 +21,6 @@ macro_rules! options {
             )+
         }
 
-        #[allow(unused)]
         const TYPECHECK: Options = Options {
             $( $id: $v, )+
         };
@@ -47,7 +45,6 @@ options! {
     trace: bool = false,
 }
 
-#[allow(unused)]
 enum Arch {
     x64,
     aarch64,

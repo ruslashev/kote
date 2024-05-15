@@ -106,7 +106,7 @@ $(KERNISO): $(KERNBIN) | $(ISODIR)
 	@$(LN) $(realpath $(GRUB_CFG)) $(ISODIR)/boot/grub
 	@$(ISO) $(IFLAGS) $(ISODIR) -o $@ 2> /dev/null
 
-$(KERNLIB): $(USERSPACE_BUNDLE) | $(RUSTDIR)
+$(KERNLIB): $(USERSPACE_BUNDLE) config.rs | $(RUSTDIR)
 	@$(call ECHO, cargo)
 	@$(CARGO_CFG) $(CARGO) build $(CFLAGS) -p kernel
 
