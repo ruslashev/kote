@@ -45,6 +45,7 @@ CFLAGS = --target kernel/arch/$(CFG_ARCH)/$(CFG_ARCH)-kernel.json
 LD = $(TOOLCHAIN)ld
 LFLAGS = -T kernel/arch/$(CFG_ARCH)/link.ld \
          -z max-page-size=0x1000 \
+         -z noexecstack \
          --gc-sections
 
 ISO = grub-mkrescue
