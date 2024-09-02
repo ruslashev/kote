@@ -68,15 +68,25 @@ impl Serial for Uart {
         // outb(COM1_PORT + COM_IER, COM_IER_RDI);
     }
 
-    fn read_byte(&self) -> u8 {
-        while inb(COM1_PORT + COM_LSR) & COM_LSR_DATA == 0 {}
+    fn read_blocking(&self) -> u8 {
+        while !self.can_read() {}
 
         inb(COM1_PORT + COM_RBR)
     }
 
-    fn write_byte(&self, byte: u8) {
-        while inb(COM1_PORT + COM_LSR) & COM_LSR_THRE == 0 {}
+    fn write_blocking(&self, byte: u8) {
+        while !self.can_write() {}
 
         outb(COM1_PORT + COM_THR, byte);
+    }
+}
+
+impl Uart {
+    fn can_read(&self) -> bool {
+        inb(COM1_PORT + COM_LSR) & COM_LSR_DATA != 0
+    }
+
+    fn can_write(&self) -> bool {
+        inb(COM1_PORT + COM_LSR) & COM_LSR_THRE != 0
     }
 }

@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::fmt;
+
 use crate::arch::uart;
 use crate::spinlock::Mutex;
 
@@ -11,17 +13,15 @@ pub static SERIAL: Mutex<SerialImpl> = Mutex::new(SerialImpl {});
 
 pub trait Serial {
     fn init();
-
-    fn read_byte(&self) -> u8;
-
-    fn write_byte(&self, byte: u8);
+    fn read_blocking(&self) -> u8;
+    fn write_blocking(&self, byte: u8);
 }
 
-impl core::fmt::Write for SerialImpl {
+impl fmt::Write for SerialImpl {
     // NOTE: By itself makes no exclusivity guarantees
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         for b in s.bytes() {
-            self.write_byte(b);
+            self.write_blocking(b);
         }
 
         Ok(())
