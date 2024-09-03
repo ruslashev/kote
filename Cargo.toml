@@ -4,6 +4,7 @@
 
 [workspace]
 members = ["kernel", "userspace/*"]
+resolver = "2"
 
 [workspace.package]
 authors = ["Ruslan Akbashev <ruslashev@gmail.com>"]
