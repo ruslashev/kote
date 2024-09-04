@@ -75,18 +75,19 @@ pub fn next() -> ! {
 
     match sched.get_next() {
         TaskSwitch::NewTask(new_idx, proc) => {
-            trace!("switching to new task '{}'", proc.name);
+            trace!("switching to a new task '{}'", proc.name);
             sched.set_current(new_idx);
             drop(cell);
             run(proc);
         }
         TaskSwitch::SameTask(proc) => {
-            trace!("switching to same task '{}'", proc.name);
+            trace!("switching to the same task '{}'", proc.name);
             drop(cell);
             run(proc);
         }
         TaskSwitch::Idle => {
             trace!("idle");
+            drop(cell);
             idle();
         }
     }
