@@ -24,11 +24,8 @@ syscall_handler:
 	; Syscall num:  rax
 
 	push rsp
-	push rcx
-	push r11
-
-	push rax
 	push rbx
+	push rcx
 	push rdx
 	push rsi
 	push rdi
@@ -36,6 +33,7 @@ syscall_handler:
 	push r8
 	push r9
 	push r10
+	push r11
 	push r12
 	push r13
 	push r14
@@ -62,6 +60,7 @@ syscall_handler:
 	pop r14
 	pop r13
 	pop r12
+	pop r11
 	pop r10
 	pop r9
 	pop r8
@@ -69,11 +68,8 @@ syscall_handler:
 	pop rdi
 	pop rsi
 	pop rdx
-	pop rbx
-	pop rax
-
-	pop r11
 	pop rcx
+	pop rbx
 	pop rsp
 
 	o64 sysret
