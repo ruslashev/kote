@@ -119,7 +119,7 @@ impl Exception {
  * │              r15               │ <- New RSP
  * └────────────────────────────────┘
  */
-#[derive(Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 #[repr(C, packed)]
 pub struct ExceptionFrame {
     pub r15: u64,
@@ -148,35 +148,54 @@ pub struct ExceptionFrame {
 
 impl fmt::Display for ExceptionFrame {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Copies to avoid references to packed fields
         let rip = self.rip;
-        let rdi = self.rdi;
-        let rsi = self.rsi;
-        let rdx = self.rdx;
-        let rcx = self.rcx;
-        let r8 = self.r8;
-        let r9 = self.r9;
-        let rsp = self.rsp;
-        let rbp = self.rbp;
 
-        writeln!(f, "RIP 0x{:<16x} RSP 0x{:<16x} RBP 0x{:<16x}", rip, rsp, rbp)?;
-        writeln!(f, "RDI 0x{:<16x} RSI 0x{:<16x} RDX 0x{:<16x}", rdi, rsi, rdx)?;
-        writeln!(f, "RCX 0x{:<16x} R8  0x{:<16x} R9  0x{:<16x}", rcx, r8, r9)?;
-
-        let flags = self.rflags;
-        let err_code = self.error_code;
-
-        writeln!(f, "Flags 0b{:022b} Err. code {:#x}", flags, err_code)?;
-
-        let mut backtrace = Backtrace::from_rbp(rbp).into_iter().enumerate().peekable();
+        writeln!(
+            f,
+            "RIP {:<#18x} RSP {:<#18x} Err {:<#18x} Flags {:#022b}",
+            rip,
+            { self.rsp },
+            { self.error_code },
+            { self.rflags },
+        )?;
+        writeln!(
+            f,
+            "RAX {:<#18x} RBX {:<#18x} RCX {:<#18x} RDX {:<#18x} RSI {:<#18x}",
+            { self.rax },
+            { self.rbx },
+            { self.rcx },
+            { self.rdx },
+            { self.rsi },
+        )?;
+        writeln!(
+            f,
+            "RDI {:<#18x} RBP {:<#18x} R8  {:<#18x} R9  {:<#18x} R10 {:<#18x}",
+            { self.rdi },
+            { self.rbp },
+            { self.r8 },
+            { self.r9 },
+            { self.r10 },
+        )?;
+        writeln!(
+            f,
+            "R11 {:<#18x} R12 {:<#18x} R13 {:<#18x} R14 {:<#18x} R15 {:<#18x}",
+            { self.r11 },
+            { self.r12 },
+            { self.r13 },
+            { self.r14 },
+            { self.r15 },
+        )?;
 
         writeln!(f, "Backtrace:")?;
+
+        let mut backtrace = Backtrace::from_rbp(self.rbp).enumerate().peekable();
 
         // Last write statement must not include newline
         if backtrace.peek().is_none() {
             write!(f, " 1) {:#x}", rip)?;
         } else {
             writeln!(f, " 1) {:#x}", rip)?;
+
             while let Some((i, addr)) = backtrace.next() {
                 if backtrace.peek().is_some() {
                     writeln!(f, "{:>2}) {:#x}", i + 2, addr)?;
