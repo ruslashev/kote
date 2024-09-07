@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use core::mem;
+use core::{mem, ptr};
 
 use crate::arch::mmu::PAGE_SIZE;
 use crate::mm::pg_alloc;
@@ -17,6 +17,17 @@ pub struct SmallVec<T> {
 }
 
 impl<T> SmallVec<T> {
+    pub const fn empty() -> Self {
+        Self {
+            buf: ptr::null_mut(),
+            len: 0,
+            cap: 0,
+            head: 0,
+            tail: 0,
+            view: 0,
+        }
+    }
+
     pub fn new() -> Self {
         let page = pg_alloc::alloc_page();
         let addr = page.to_physaddr().into_vaddr();

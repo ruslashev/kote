@@ -2,21 +2,25 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use core::cell::OnceCell;
-
 use crate::arch;
 use crate::bootloader::BootloaderInfo;
 use crate::process::{Process, State};
 use crate::small_vec::SmallVec;
-use crate::spinlock::Mutex;
+use crate::spinlock::{Mutex, SpinlockGuard};
 
-static SCHEDULER: Mutex<OnceCell<Scheduler>> = Mutex::new(OnceCell::new());
+static SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::empty());
 
 struct Scheduler {
     processes: SmallVec<Process>,
 }
 
 impl Scheduler {
+    const fn empty() -> Self {
+        Self {
+            processes: SmallVec::empty(),
+        }
+    }
+
     fn new() -> Self {
         Self {
             processes: SmallVec::new(),
@@ -66,28 +70,27 @@ pub fn init(info: &BootloaderInfo) {
     sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
     sched.processes.push_back(Process::from_elf("hello_world", HLWD_ELF, info));
 
-    assert!(SCHEDULER.lock().set(sched).is_ok());
+    *SCHEDULER.lock() = sched;
 }
 
 pub fn next() -> ! {
-    let mut cell = SCHEDULER.lock();
-    let sched = cell.get_mut().unwrap();
+    let mut sched = SCHEDULER.lock();
 
     match sched.get_next() {
         TaskSwitch::NewTask(new_idx, proc) => {
             trace!("switching to a new task '{}'", proc.name);
             sched.set_current(new_idx);
-            drop(cell);
+            drop(sched);
             run(proc);
         }
         TaskSwitch::SameTask(proc) => {
             trace!("switching to the same task '{}'", proc.name);
-            drop(cell);
+            drop(sched);
             run(proc);
         }
         TaskSwitch::Idle => {
             trace!("idle");
-            drop(cell);
+            drop(sched);
             idle();
         }
     }
@@ -107,8 +110,5 @@ fn idle() -> ! {
 
 // TODO: this should probably return `&mut Process` instead of `Option<Process>`
 pub fn current() -> Option<Process> {
-    let cell = SCHEDULER.lock();
-    let sched = cell.get().unwrap();
-
-    sched.processes.current().copied()
+    SCHEDULER.lock().processes.current().copied()
 }
