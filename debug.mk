@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 OBJD = $(TOOLCHAIN)objdump
-OFLAGS = --disassemble-all --demangle --no-show-raw-insn --wide -M intel
+OFLAGS = --disassemble --demangle --no-show-raw-insn --wide -M intel
 OFLAGS_FULL = $(OFLAGS) --source
 
 BOCHS = bochs -f cfg/bochs.cfg -q
