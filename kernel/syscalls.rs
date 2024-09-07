@@ -110,7 +110,7 @@ pub extern "C" fn syscall_dispatch(args: &SyscallArgs) -> u64 {
 }
 
 fn write(args: &SyscallArgs) -> u64 {
-    let mut root_dir = sched::current().unwrap().root_dir;
+    let mut root_dir = sched::current().root_dir;
     let addr = args.arg1;
     let size = args.arg2 as usize;
     let from = VirtAddr::from_u64(addr);

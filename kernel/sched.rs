@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use core::ops::{Deref, DerefMut};
+
 use crate::arch;
 use crate::bootloader::BootloaderInfo;
 use crate::process::{Process, State};
@@ -12,6 +14,10 @@ static SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::empty());
 
 struct Scheduler {
     processes: SmallVec<Process>,
+}
+
+pub struct ProcessGuard<'s> {
+    sched: SpinlockGuard<'s, Scheduler>,
 }
 
 impl Scheduler {
@@ -108,7 +114,22 @@ fn idle() -> ! {
     }
 }
 
-// TODO: this should probably return `&mut Process` instead of `Option<Process>`
-pub fn current() -> Option<Process> {
-    SCHEDULER.lock().processes.current().copied()
+impl Deref for ProcessGuard<'_> {
+    type Target = Process;
+
+    fn deref(&self) -> &Process {
+        self.sched.processes.current().unwrap()
+    }
+}
+
+impl DerefMut for ProcessGuard<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.sched.processes.current().unwrap()
+    }
+}
+
+pub fn current<'s>() -> ProcessGuard<'s> {
+    ProcessGuard {
+        sched: SCHEDULER.lock(),
+    }
 }
