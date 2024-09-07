@@ -83,13 +83,13 @@ impl fmt::LowerHex for VirtAddr {
 
 impl From<PhysAddr> for VirtAddr {
     fn from(paddr: PhysAddr) -> Self {
-        VirtAddr(paddr.0 + arch::KERNEL_BASE as usize)
+        VirtAddr(paddr.0 + arch::KERNEL_BASE)
     }
 }
 
 impl From<VirtAddr> for PhysAddr {
     fn from(vaddr: VirtAddr) -> Self {
-        PhysAddr(vaddr.0 - arch::KERNEL_BASE as usize)
+        PhysAddr(vaddr.0 - arch::KERNEL_BASE)
     }
 }
 

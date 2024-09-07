@@ -297,7 +297,7 @@ fn remove_reserved_areas(info: &mut BootloaderInfo) {
     let shdr_ranges =
         SectionInfoIterator::from_info(info.section_headers.as_ref().unwrap()).map(|(_, shdr)| {
             let mut addr = shdr.sh_addr as usize;
-            let base = KERNEL_BASE as usize;
+            let base = KERNEL_BASE;
             let size = shdr.sh_size as usize;
 
             if addr > base {
