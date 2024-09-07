@@ -12,6 +12,10 @@ ifeq ($(CFG_ARCH), x64)
     AS = nasm
     AFLAGS = -f elf64
 
+    ifndef RELEASE
+        AFLAGS += -g
+    endif
+
     ASRC = start.s interrupts.s syscall.s
 
     QEMU = qemu-system-x86_64
