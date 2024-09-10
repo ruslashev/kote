@@ -42,7 +42,7 @@ options! {
     serial: bool = true,
 
     /// Enable output of trace!() macro
-    trace: bool = false,
+    trace: bool = true,
 }
 
 enum Arch {
