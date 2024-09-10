@@ -93,6 +93,8 @@ fn irq_eoi(irq: u8) {
 pub extern "C" fn irq_dispatch(frame: &ExceptionFrame) {
     let vec = frame.number as u8;
 
+    sched::current().registers = *frame;
+
     if vec == 8 {
         rtc::handle_interrupt();
         irq_eoi(vec);

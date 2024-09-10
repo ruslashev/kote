@@ -6,7 +6,7 @@ use core::fmt;
 
 use super::handlers;
 use crate::arch::backtrace::Backtrace;
-use crate::{arch, mm};
+use crate::{arch, mm, sched};
 
 static EXCEPTION_HANDLERS: [Exception; 32] = [
     Exception::with_hdl("Divide-by-zero Error", handlers::divide_by_zero), // 0
@@ -233,6 +233,8 @@ impl mm::types::RegisterFrameOps for ExceptionFrame {
 pub extern "C" fn exception_dispatch(frame: &ExceptionFrame) {
     let vec = frame.number;
     let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
+
+    sched::current().registers = *frame;
 
     println!("Exception {} occured: {}", vec, exc_handler.name);
     println!("{}", frame);
