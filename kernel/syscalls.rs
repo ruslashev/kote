@@ -6,6 +6,7 @@ use core::convert::Infallible;
 use core::ops::{ControlFlow, FromResidual, Try};
 use core::{fmt, slice, str};
 
+use crate::arch::RegisterFrame;
 use crate::mm::types::{Address, RootPageDirOps, VirtAddr};
 use crate::sched;
 
@@ -23,6 +24,18 @@ pub struct SyscallArgs {
     arg2: u64,
     arg3: u64,
     arg4: u64,
+}
+
+impl From<RegisterFrame> for SyscallArgs {
+    fn from(regs: RegisterFrame) -> Self {
+        Self {
+            number: regs.rax,
+            arg1: regs.rdi,
+            arg2: regs.rsi,
+            arg3: regs.rdx,
+            arg4: regs.r10,
+        }
+    }
 }
 
 impl fmt::Display for SyscallArgs {
@@ -96,12 +109,16 @@ impl FromResidual<NumericResult<Infallible>> for u64 {
 }
 
 #[no_mangle]
-pub extern "C" fn syscall_dispatch(args: &SyscallArgs) -> u64 {
+pub extern "C" fn syscall_dispatch(regs: &RegisterFrame) -> u64 {
+    let args = SyscallArgs::from(*regs);
+
+    sched::current().registers = *regs;
+
     trace!("{}", args);
 
     match args.number {
         SYSC_YIELD => sched::next(),
-        SYSC_WRITE => write(args),
+        SYSC_WRITE => write(&args),
         _ => {
             trace!("invalid syscall number");
             SYSR_ERR_BAD_ARGS

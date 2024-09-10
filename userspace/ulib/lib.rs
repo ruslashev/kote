@@ -48,12 +48,12 @@ fn syscall(num: u64, arg1: u64, arg2: u64, arg3: u64, arg4: u64) -> u64 {
     ret
 }
 
-pub fn write(s: &str) -> u64 {
-    syscall(1, s.as_ptr() as u64, s.len() as u64, 0, 0)
-}
-
 pub fn sched_yield() {
     syscall(0, 0, 0, 0, 0);
+}
+
+pub fn write(s: &str) -> u64 {
+    syscall(1, s.as_ptr() as u64, s.len() as u64, 0, 0)
 }
 
 #[panic_handler]

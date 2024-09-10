@@ -71,9 +71,9 @@ pub fn init(info: &BootloaderInfo) {
 
     let mut sched = Scheduler::new();
 
-    sched.processes.push_back(Process::from_elf("loop", LOOP_ELF, info));
-    sched.processes.push_back(Process::from_elf("breakpoint", BKPT_ELF, info));
-    sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
+    // sched.processes.push_back(Process::from_elf("loop", LOOP_ELF, info));
+    // sched.processes.push_back(Process::from_elf("breakpoint", BKPT_ELF, info));
+    // sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
     sched.processes.push_back(Process::from_elf("hello_world", HLWD_ELF, info));
 
     *SCHEDULER.lock() = sched;

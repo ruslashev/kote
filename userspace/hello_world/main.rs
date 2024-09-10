@@ -12,6 +12,9 @@ use ulib::println;
 fn main() {
     loop {
         println!("Hello, World!");
+
         ulib::sched_yield();
+
+        println!("Bye, World!");
     }
 }
