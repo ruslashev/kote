@@ -86,7 +86,7 @@ impl Exception {
  * ├───────────────────────┴────────┤
  * │           return RIP           │
  * ├───────────────┬────────────────┤
- * │  exc. vector  │ error code (0) │
+ * │  exc/irq num  │ error code (0) │
  * ├───────────────┴────────────────┤
  * │              rax               │
  * ├────────────────────────────────┤
@@ -138,7 +138,7 @@ pub struct ExceptionFrame {
     pub rbx: u64,
     pub rax: u64,
     pub error_code: u32,
-    pub exc_vector: u32,
+    pub number: u32,
     pub rip: u64,
     pub cs: u64,
     pub rflags: u64,
@@ -231,7 +231,7 @@ impl mm::types::RegisterFrameOps for ExceptionFrame {
 
 #[no_mangle]
 pub extern "C" fn exception_dispatch(frame: &ExceptionFrame) {
-    let vec = frame.exc_vector;
+    let vec = frame.number;
     let exc_handler = &EXCEPTION_HANDLERS[vec as usize];
 
     println!("Exception {} occured: {}", vec, exc_handler.name);

@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use super::exceptions::ExceptionFrame;
 use super::rtc;
 use crate::arch::asm::io;
 use crate::sched;
@@ -89,7 +90,9 @@ fn irq_eoi(irq: u8) {
 }
 
 #[no_mangle]
-pub extern "C" fn irq_dispatch(vec: u8) {
+pub extern "C" fn irq_dispatch(frame: &ExceptionFrame) {
+    let vec = frame.number as u8;
+
     if vec == 8 {
         rtc::handle_interrupt();
         irq_eoi(vec);
