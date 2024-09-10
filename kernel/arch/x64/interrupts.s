@@ -59,10 +59,26 @@ handle_exception_%1:
 	jmp exception_handler_common
 %endmacro
 
+%macro define_irq_handler 1
+global handle_irq_%1
+handle_irq_%1:
+	push 0
+	mov dword [rsp + 4], %1
+	jmp irq_handler_common
+%endmacro
+
 exception_handler_common:
 	push_regs
 	mov rdi, rsp
 	call exception_dispatch
+	pop_regs
+	add rsp, 8
+	iretq
+
+irq_handler_common:
+	push_regs
+	mov rdi, rsp
+	call irq_dispatch
 	pop_regs
 	add rsp, 8
 	iretq
@@ -99,22 +115,6 @@ define_exception_handler 28
 define_exception_handler_pushes_err 29
 define_exception_handler_pushes_err 30
 define_exception_handler 31
-
-%macro define_irq_handler 1
-global handle_irq_%1
-handle_irq_%1:
-	push 0
-	mov dword [rsp + 4], %1
-	jmp irq_handler_common
-%endmacro
-
-irq_handler_common:
-	push_regs
-	mov rdi, rsp
-	call irq_dispatch
-	pop_regs
-	add rsp, 8
-	iretq
 
 define_irq_handler 0
 define_irq_handler 1
