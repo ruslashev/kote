@@ -20,6 +20,10 @@ impl Iterator for Backtrace {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.rbp == 0 {
+            return None;
+        }
+
         let saved_rip = self.rbp + 8;
         let retaddr = unsafe { *(saved_rip as *const u64) };
 
