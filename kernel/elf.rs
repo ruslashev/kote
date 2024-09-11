@@ -189,9 +189,10 @@ fn load_program_header(process: &mut Process, input: &mut &[u8], elf: &[u8]) {
 
     slice.fill(0);
 
-    // TODO: handle p_memsz != p_filesz
-    let virt = &mut slice[offset..offset + size_in_mem];
-    let file = &elf[file_pos..file_pos + file_len];
+    let smaller_size = usize::min(size_in_mem, file_len);
+    let virt = &mut slice[offset..offset + smaller_size];
+    let file = &elf[file_pos..file_pos + smaller_size];
+
     virt.copy_from_slice(file);
 
     mm::switch_to_kernel_root_dir();
