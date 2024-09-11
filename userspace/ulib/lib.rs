@@ -56,6 +56,41 @@ pub fn write(s: &str) -> u64 {
     syscall(1, s.as_ptr() as u64, s.len() as u64, 0, 0)
 }
 
+pub fn getch(echo: bool) -> u64 {
+    let ch = syscall(2, 0, 0, 0, 0);
+
+    if echo {
+        let c = ch as u8 as char;
+        let t = &mut [0];
+        let s = c.encode_utf8(t);
+
+        write(s);
+    }
+
+    ch
+}
+
+pub fn readline<'s>() -> &'s str {
+    static mut BUF: [u8; 128] = [0; 128];
+    let mut idx = 0;
+
+    unsafe {
+        while idx < BUF.len() {
+            let ch = getch(true) as u8;
+
+            // Enter
+            if ch == 13 {
+                break;
+            }
+
+            BUF[idx] = ch;
+            idx += 1;
+        }
+
+        core::str::from_utf8(&BUF).unwrap_or("invalid input")
+    }
+}
+
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);

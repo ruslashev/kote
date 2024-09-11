@@ -9,9 +9,11 @@ use core::{fmt, slice, str};
 use crate::arch::RegisterFrame;
 use crate::mm::types::{Address, RootPageDirOps, VirtAddr};
 use crate::sched;
+use crate::serial::{Serial, SERIAL};
 
 const SYSC_YIELD: u64 = 0;
 const SYSC_WRITE: u64 = 1;
+const SYSC_GETCH: u64 = 2;
 
 const SYSR_OK: u64 = 0;
 const SYSR_ERR_NO_PERMISSIONS: u64 = 1;
@@ -119,6 +121,7 @@ pub extern "C" fn syscall_dispatch(regs: &RegisterFrame) -> u64 {
     match args.number {
         SYSC_YIELD => sched::next(),
         SYSC_WRITE => write(&args),
+        SYSC_GETCH => getch(),
         _ => {
             trace!("invalid syscall number");
             SYSR_ERR_BAD_ARGS
@@ -146,4 +149,8 @@ fn write(args: &SyscallArgs) -> u64 {
     }
 
     SYSR_OK
+}
+
+fn getch() -> u64 {
+    SERIAL.lock().read_blocking().into()
 }

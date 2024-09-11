@@ -1,5 +1,5 @@
 kote (koh·teh) is a tiny kernel made from scratch. At ~5kLOC it is capable of
-preemptive multitasking, userspace with 2 syscalls and a framebuffer console.
+preemptive multitasking, userspace with 3 syscalls and a framebuffer console.
 
 It should be portable to something other than x86-64 and is made to be
 as minimal and readable as possible. It also has no cargo dependencies.

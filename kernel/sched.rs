@@ -68,13 +68,15 @@ pub fn init(info: &BootloaderInfo) {
     static LOOP_ELF: &[u8] = include_bytes!("../build/bundle/loop");
     static BKPT_ELF: &[u8] = include_bytes!("../build/bundle/breakpoint");
     static HLWD_ELF: &[u8] = include_bytes!("../build/bundle/hello_world");
+    static READ_ELF: &[u8] = include_bytes!("../build/bundle/input");
 
     let mut sched = Scheduler::new();
 
-    // sched.processes.push_back(Process::from_elf("loop", LOOP_ELF, info));
-    // sched.processes.push_back(Process::from_elf("breakpoint", BKPT_ELF, info));
-    // sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
+    sched.processes.push_back(Process::from_elf("loop", LOOP_ELF, info));
+    sched.processes.push_back(Process::from_elf("breakpoint", BKPT_ELF, info));
+    sched.processes.push_back(Process::from_elf("loop 2", LOOP_ELF, info));
     sched.processes.push_back(Process::from_elf("hello_world", HLWD_ELF, info));
+    sched.processes.push_back(Process::from_elf("input", READ_ELF, info));
 
     *SCHEDULER.lock() = sched;
 }
